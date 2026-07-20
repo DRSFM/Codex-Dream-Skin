@@ -28,7 +28,10 @@
 | 用途 | 路径 |
 |------|------|
 | 源码（本整理包） | `Codex-Dream-Skin/windows/` |
+| 工具快捷方式 | `Codex-Dream-Skin/windows/shortcuts/`（桌面仅保留主启动入口） |
 | 状态 / 日志 | `%LOCALAPPDATA%\CodexDreamSkin` |
+| 活动主题 / 自定义图 | `%LOCALAPPDATA%\CodexDreamSkin\custom` |
+| 图片显示模式 | `%LOCALAPPDATA%\CodexDreamSkin\custom\image-mode.txt`（`full-window` / `home-card`） |
 | Codex 配置 | `%USERPROFILE%\.codex\config.toml` |
 | 默认 CDP 端口 | 首选 `9335`，冲突时自动选空闲口（Mac 包默认从 `9341` 起） |
 
@@ -40,7 +43,8 @@
 | 启动 + 注入 | ✅ | ✅ |
 | 一键恢复 | ✅ | ✅ |
 | 实机 verify / 截图 | ✅ | ✅ |
-| 用户选图定制 | ✅ | ❌ |
+| 用户选图定制 | ✅ | ✅ PNG/JPEG/WebP，≤16 MB；整窗或主页卡片 |
+| 多主题热切换 | ✅ | ✅ 8 套内置主题 |
 | 官方签名校验 | ✅ | Store 签名类型 + 包身份 |
 | 客户部署提示词 | ✅ | ❌（可用 Mac 文案改写） |
 | 打客户 ZIP | ✅ `build-client-release.sh` | 手动压缩 `windows/` |

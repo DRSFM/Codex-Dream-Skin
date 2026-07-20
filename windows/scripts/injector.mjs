@@ -1,12 +1,28 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "..");
-const SKIN_VERSION = "1.0.0";
+const SKIN_VERSION = "1.1.0";
 const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]", "::1"]);
 const BROWSER_ID_PATTERN = /^[A-Za-z0-9._-]{1,200}$/;
+const MAX_ART_BYTES = 16 * 1024 * 1024;
+const DEFAULT_THEME_ID = "pink-dream";
+const THEME_ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,79}$/;
+const ART_PRESENTATIONS = new Set(["full-window", "home-card"]);
+const ART_SAFE_AREAS = new Set(["auto", "left", "right", "center", "none"]);
+const THEME_COLOR_KEYS = [
+  "background", "backgroundAlt", "panel", "panelAlt", "accent", "accentAlt",
+  "secondary", "highlight", "ink", "muted", "line", "onAccent",
+];
+const ART_MIME_TYPES = new Map([
+  [".png", "image/png"],
+  [".jpg", "image/jpeg"],
+  [".jpeg", "image/jpeg"],
+  [".webp", "image/webp"],
+]);
 
 class CdpIdentityMismatchError extends Error {}
 
@@ -266,16 +282,173 @@ async function connectBrowserIdentityAnchor(port, expectedBrowserId) {
   return new BrowserIdentityAnchor(validatedDebuggerUrl(version, port)).open();
 }
 
+function customStateRoot() {
+  return process.env.LOCALAPPDATA
+    ? path.join(process.env.LOCALAPPDATA, "CodexDreamSkin", "custom")
+    : null;
+}
+
+async function readOptionalText(filePath) {
+  try {
+    return await fs.readFile(filePath, "utf8");
+  } catch (error) {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+function normalizedUnit(value, name) {
+  if (value === null || value === undefined || value === "") return null;
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < 0 || number > 1) {
+    throw new Error(`${name} must be null or a number between 0 and 1`);
+  }
+  return number;
+}
+
+async function loadTheme() {
+  const customRoot = customStateRoot();
+  const selectorPath = customRoot ? path.join(customRoot, "active-theme.txt") : null;
+  let themeId = DEFAULT_THEME_ID;
+  const selectedTheme = selectorPath ? await readOptionalText(selectorPath) : null;
+  if (selectedTheme !== null) themeId = selectedTheme.trim();
+  if (!THEME_ID_PATTERN.test(themeId)) throw new Error(`Invalid active theme id: ${themeId}`);
+
+  const themePath = path.join(root, "themes", themeId, "theme.json");
+  const themeText = await fs.readFile(themePath, "utf8");
+  const raw = JSON.parse(themeText);
+  if (raw.schemaVersion !== 1 || raw.id !== themeId || !["light", "dark"].includes(raw.scheme)) {
+    throw new Error(`Unsupported theme metadata: ${themePath}`);
+  }
+  const text = (value, fallback, maximum) =>
+    typeof value === "string" && value.trim() ? value.trim().slice(0, maximum) : fallback;
+  const colors = {};
+  for (const key of THEME_COLOR_KEYS) {
+    const value = raw.colors?.[key];
+    if (typeof value !== "string" || !/^#[0-9a-f]{6}$/i.test(value)) {
+      throw new Error(`Theme ${themeId} has an invalid ${key} color`);
+    }
+    colors[key] = value;
+  }
+  const rawArt = raw.art && typeof raw.art === "object" && !Array.isArray(raw.art) ? raw.art : {};
+  const presentation = rawArt.presentation ?? "home-card";
+  const safeArea = rawArt.safeArea ?? "auto";
+  if (!ART_PRESENTATIONS.has(presentation)) {
+    throw new Error(`Theme ${themeId} has an invalid art.presentation`);
+  }
+  if (!ART_SAFE_AREAS.has(safeArea)) {
+    throw new Error(`Theme ${themeId} has an invalid art.safeArea`);
+  }
+  return {
+    theme: {
+      schemaVersion: 1,
+      id: themeId,
+      name: text(raw.name, themeId, 80),
+      description: text(raw.description, "", 160),
+      scheme: raw.scheme,
+      brandTitle: text(raw.brandTitle, raw.name, 100),
+      brandSubtitle: text(raw.brandSubtitle, "CODEX DREAM SKIN", 100),
+      signature: text(raw.signature, raw.name, 100),
+      note: text(raw.note, "✦", 12),
+      ribbon: text(raw.ribbon, "✦", 80),
+      colors,
+      art: {
+        presentation,
+        focusX: normalizedUnit(rawArt.focusX, "art.focusX"),
+        focusY: normalizedUnit(rawArt.focusY, "art.focusY"),
+        safeArea,
+      },
+    },
+    themePath,
+    selectorPath,
+  };
+}
+
+async function loadArt() {
+  const defaultPath = path.join(root, "assets", "dream-reference.png");
+  const customRoot = customStateRoot();
+  const candidates = customRoot
+    ? [...ART_MIME_TYPES.keys()].map((extension) => path.join(customRoot, `custom-image${extension}`))
+    : [];
+
+  for (const candidate of candidates) {
+    try {
+      const stat = await fs.stat(candidate);
+      if (!stat.isFile() || stat.size < 1 || stat.size > MAX_ART_BYTES) {
+        throw new Error(`Custom image must be between 1 byte and ${MAX_ART_BYTES} bytes: ${candidate}`);
+      }
+      const extension = path.extname(candidate).toLowerCase();
+      return { bytes: await fs.readFile(candidate), mime: ART_MIME_TYPES.get(extension), path: candidate };
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+    }
+  }
+
+  return { bytes: await fs.readFile(defaultPath), mime: "image/png", path: defaultPath };
+}
+
+async function loadPresentation(theme) {
+  const customRoot = customStateRoot();
+  const modePath = customRoot ? path.join(customRoot, "image-mode.txt") : null;
+  const modeText = modePath ? await readOptionalText(modePath) : null;
+  const presentation = modeText === null ? theme.art.presentation : modeText.trim();
+  if (!ART_PRESENTATIONS.has(presentation)) {
+    throw new Error(`Invalid image presentation mode: ${presentation}`);
+  }
+  return { presentation, modePath };
+}
+
+async function readPayloadSourceStamp(sourcePaths) {
+  const stamps = [];
+  for (const sourcePath of [...new Set(sourcePaths.filter(Boolean))].sort()) {
+    try {
+      const stat = await fs.stat(sourcePath);
+      stamps.push(`${sourcePath}:${stat.size}:${stat.mtimeMs}`);
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+      stamps.push(`${sourcePath}:missing`);
+    }
+  }
+  return stamps.join("|");
+}
+
 async function loadPayload() {
-  const [css, template, art] = await Promise.all([
-    fs.readFile(path.join(root, "assets", "dream-skin.css"), "utf8"),
-    fs.readFile(path.join(root, "assets", "renderer-inject.js"), "utf8"),
-    fs.readFile(path.join(root, "assets", "dream-reference.png")),
+  const cssPath = path.join(root, "assets", "dream-skin.css");
+  const templatePath = path.join(root, "assets", "renderer-inject.js");
+  const [css, template, art, loadedTheme] = await Promise.all([
+    fs.readFile(cssPath, "utf8"),
+    fs.readFile(templatePath, "utf8"),
+    loadArt(),
+    loadTheme(),
   ]);
-  const artDataUrl = `data:image/png;base64,${art.toString("base64")}`;
-  return template
+  const presentation = await loadPresentation(loadedTheme.theme);
+  const theme = {
+    ...loadedTheme.theme,
+    art: {
+      ...loadedTheme.theme.art,
+      presentation: presentation.presentation,
+    },
+  };
+  const artDataUrl = `data:${art.mime};base64,${art.bytes.toString("base64")}`;
+  const payload = template
     .replace("__DREAM_CSS_JSON__", JSON.stringify(css))
-    .replace("__DREAM_ART_JSON__", JSON.stringify(artDataUrl));
+    .replace("__DREAM_ART_JSON__", JSON.stringify(artDataUrl))
+    .replace("__DREAM_THEME_JSON__", JSON.stringify(theme));
+  const sourcePaths = [
+    cssPath,
+    templatePath,
+    art.path,
+    loadedTheme.themePath,
+    loadedTheme.selectorPath,
+    presentation.modePath,
+  ];
+  return {
+    payload,
+    fingerprint: createHash("sha256").update(payload).digest("hex"),
+    sourcePaths,
+    sourceStamp: await readPayloadSourceStamp(sourcePaths),
+    theme,
+  };
 }
 
 async function probeSession(session) {
@@ -338,6 +511,11 @@ async function removeFromSession(session) {
     if (state?.cleanup) return state.cleanup();
     document.documentElement?.classList.remove('codex-dream-skin');
     document.documentElement?.style.removeProperty('--dream-art');
+    for (const variable of ['--ds-bg','--ds-bg-alt','--ds-panel','--ds-panel-alt','--ds-accent','--ds-accent-alt','--ds-secondary','--ds-highlight','--ds-ink','--ds-muted','--ds-line','--ds-on-accent','--ds-tagline','--ds-project-prefix']) {
+      document.documentElement?.style.removeProperty(variable);
+    }
+    document.documentElement?.removeAttribute('data-dream-theme');
+    document.documentElement?.removeAttribute('data-dream-scheme');
     document.querySelectorAll('.dream-home').forEach((node) => node.classList.remove('dream-home'));
     document.querySelectorAll('.dream-home-shell').forEach((node) => node.classList.remove('dream-home-shell'));
     document.getElementById('codex-dream-skin-style')?.remove();
@@ -372,6 +550,8 @@ async function verifySession(session) {
     const result = {
       installed: document.documentElement.classList.contains('codex-dream-skin'),
       version: window.__CODEX_DREAM_SKIN_STATE__?.version ?? null,
+      themeId: window.__CODEX_DREAM_SKIN_STATE__?.themeId ?? null,
+      scheme: window.__CODEX_DREAM_SKIN_STATE__?.scheme ?? null,
       expectedVersion: ${JSON.stringify(SKIN_VERSION)},
       stylePresent: Boolean(document.getElementById('codex-dream-skin-style')),
       chromePresent: Boolean(document.getElementById('codex-dream-skin-chrome')),
@@ -388,7 +568,7 @@ async function verifySession(session) {
         y: document.documentElement.scrollHeight > document.documentElement.clientHeight,
       },
     };
-    result.pass = result.installed && result.version === result.expectedVersion &&
+    result.pass = result.installed && result.version === result.expectedVersion && Boolean(result.themeId) &&
       result.stylePresent && result.chromePresent &&
       result.chromePointerEvents === 'none' && Boolean(result.composer) && Boolean(result.sidebar) &&
       (!result.homePresent || (Boolean(result.hero) &&
@@ -437,7 +617,8 @@ async function capture(session, outputPath) {
 
 async function runOneShot(options) {
   const connected = await connectCodexTargets(options.port, options.timeoutMs);
-  const payload = (options.mode === "once" || options.reload) ? await loadPayload() : null;
+  const loadedPayload = (options.mode === "once" || options.reload) ? await loadPayload() : null;
+  const payload = loadedPayload?.payload ?? null;
   const results = [];
   let screenshotCaptured = false;
   try {
@@ -499,7 +680,8 @@ async function runWatch(options) {
   process.on("SIGTERM", stop);
 
   try {
-    const payload = await loadPayload();
+    let loadedPayload = await loadPayload();
+    let lastPayloadErrorLogAt = 0;
     while (!stopping) {
       if (identityAnchor.closed) {
         console.error("[dream-skin] original CDP browser identity closed; watcher is stopping instead of reconnecting");
@@ -519,6 +701,35 @@ async function runWatch(options) {
         }
         await new Promise((resolve) => setTimeout(resolve, retryMs));
         continue;
+      }
+
+      try {
+        const sourceStamp = await readPayloadSourceStamp(loadedPayload.sourcePaths);
+        if (sourceStamp !== loadedPayload.sourceStamp) {
+          const candidate = await loadPayload();
+          if (candidate.fingerprint !== loadedPayload.fingerprint) {
+            loadedPayload = candidate;
+            for (const [id, session] of sessions) {
+              try {
+                await applyToSession(session, loadedPayload.payload);
+              } catch (error) {
+                console.error(`[dream-skin] live image/theme update failed for ${id}: ${error.message}`);
+                session.close();
+                sessions.delete(id);
+                targetFailures.delete(id);
+              }
+            }
+            console.log(`[dream-skin] live theme updated: ${loadedPayload.theme.id}/${loadedPayload.theme.art.presentation}`);
+          } else {
+            loadedPayload.sourceStamp = candidate.sourceStamp;
+            loadedPayload.sourcePaths = candidate.sourcePaths;
+          }
+        }
+      } catch (error) {
+        if (Date.now() - lastPayloadErrorLogAt >= 30000) {
+          console.error(`[dream-skin] image/theme update rejected: ${error.message}; keeping the active payload`);
+          lastPayloadErrorLogAt = Date.now();
+        }
       }
 
       const activeIds = new Set(targets.map((target) => target.id));
@@ -549,7 +760,7 @@ async function runWatch(options) {
           }
           let lastReinjectErrorLogAt = 0;
           session.on("Page.loadEventFired", () => {
-            setTimeout(() => applyToSession(session, payload).catch((error) => {
+            setTimeout(() => applyToSession(session, loadedPayload.payload).catch((error) => {
               if (Date.now() - lastReinjectErrorLogAt >= 30000) {
                 console.error(`[dream-skin] reinject failed for ${target.id}: ${error.message}`);
                 lastReinjectErrorLogAt = Date.now();
@@ -557,7 +768,7 @@ async function runWatch(options) {
             }), 250);
           });
           if (identityAnchor.closed) throw new CdpIdentityMismatchError("Original CDP browser identity closed");
-          await applyToSession(session, payload);
+          await applyToSession(session, loadedPayload.payload);
           sessions.set(target.id, session);
           targetFailures.delete(target.id);
           console.log(`[dream-skin] injected target ${target.id}`);
@@ -622,10 +833,17 @@ if (options.mode === "self-test") {
   }
   console.log(JSON.stringify({ pass: true, version: SKIN_VERSION, test: "loopback-cdp-validation" }));
 } else if (options.mode === "check-payload") {
-  const payload = await loadPayload();
-  if (payload.includes("__DREAM_CSS_JSON__") || payload.includes("__DREAM_ART_JSON__")) {
+  const loadedPayload = await loadPayload();
+  if (loadedPayload.payload.includes("__DREAM_CSS_JSON__") ||
+      loadedPayload.payload.includes("__DREAM_ART_JSON__") ||
+      loadedPayload.payload.includes("__DREAM_THEME_JSON__")) {
     throw new Error("Payload placeholders were not fully replaced");
   }
-  console.log(JSON.stringify({ pass: true, version: SKIN_VERSION, payloadBytes: Buffer.byteLength(payload) }));
+  console.log(JSON.stringify({
+    pass: true,
+    version: SKIN_VERSION,
+    payloadBytes: Buffer.byteLength(loadedPayload.payload),
+    presentation: loadedPayload.theme.art.presentation,
+  }));
 } else if (options.mode === "watch") await runWatch(options);
 else await runOneShot(options);

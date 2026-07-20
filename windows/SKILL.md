@@ -9,17 +9,18 @@ Apply a reversible renderer skin through Chromium DevTools Protocol while launch
 
 ## Workflow
 
-1. Install Node.js 22 or newer, close Codex, then run `scripts/install-dream-skin.ps1` once to set the matching official base colors and create launch/restore shortcuts.
+1. Install Node.js 22 or newer, close Codex, then run `scripts/install-dream-skin.ps1` once to set the matching official base colors. It creates only the main launch shortcut on the desktop and keeps install, restore, theme, and image shortcuts under `shortcuts/`.
 2. Run `scripts/start-dream-skin.ps1`. The shortcut asks before restarting an already-open Codex app; CLI callers must explicitly add `-RestartExisting`.
-3. Run `scripts/verify-dream-skin.ps1 -ScreenshotPath <absolute-path>` after launch. Treat a missing hero, native composer, sidebar skin, or injection marker as failure. The native suggestion count is responsive and may be two to four.
-4. Inspect the screenshot against `references/qa-inventory.md`. Verify both the home screen and a normal task before signing off.
-5. Run `scripts/restore-dream-skin.ps1` to remove the live skin, close the saved CDP session, and reopen Codex normally. Add `-RestoreBaseTheme` to restore only saved appearance keys, `-RecoverConfigBackup` for explicit byte-for-byte recovery of a damaged config, or `-Uninstall` to delete shortcuts. A completed config restore archives that install's backup so a later install captures a fresh baseline.
+3. Use the repository image shortcut to choose either `full-window` presentation or the backward-compatible `home-card` presentation. The watcher reapplies valid image, theme, and presentation changes to the live renderer.
+4. Run `scripts/verify-dream-skin.ps1 -ScreenshotPath <absolute-path>` after launch. Treat a missing hero, native composer, sidebar skin, or injection marker as failure. The native suggestion count is responsive and may be two to four.
+5. Inspect the screenshot against `references/qa-inventory.md`. Verify both the home screen and a normal task before signing off.
+6. Run `scripts/restore-dream-skin.ps1` to remove the live skin, close the saved CDP session, and reopen Codex normally. Add `-RestoreBaseTheme` to restore only saved appearance keys, `-RecoverConfigBackup` for explicit byte-for-byte recovery of a damaged config, or `-Uninstall` to delete shortcuts. A completed config restore archives that install's backup so a later install captures a fresh baseline.
 
 ## Guardrails
 
 - Preserve the official executable, package signature, user threads, pets, plugins, and authentication state.
-- Do not use the full reference screenshot as a fake whole-window overlay. It is only a cropped hero/polaroid asset; all controls remain live Codex controls.
-- Keep the reference image confined to the single top banner and decorative crop. Keep the cards below it as native Codex suggestion buttons with native labels/icons.
+- Do not use a screenshot containing UI as a fake whole-window overlay. Full-window mode accepts a pure background image and keeps all Codex controls live.
+- Keep `home-card` as the compatibility path for the existing top banner and decorative crop. In `full-window`, paint the selected image once on the native window and use transparent readability layers instead of repeating it in every panel.
 - Attach the "选择项目" treatment to Codex's real project-selector toolbar and keep the current project button clickable; never draw a disconnected replacement.
 - Keep decorative layers `pointer-events: none` and keep real buttons, navigation, and composer above them.
 - On app updates, rerun install and launch; the scripts discover the current Appx package dynamically. Saved paths are never trusted for process control unless they still match a registered package identity.
@@ -33,7 +34,7 @@ Apply a reversible renderer skin through Chromium DevTools Protocol while launch
 ## Checks
 
 ```powershell
-powershell -NoProfile -File tests\run-tests.ps1
+pwsh -NoProfile -File tests\run-tests.ps1
 node --check scripts\injector.mjs
 node --check assets\renderer-inject.js
 ```
@@ -45,7 +46,7 @@ node --check assets\renderer-inject.js
 - `scripts/config-utf8.ps1`: atomic UTF-8 configuration backup, selective restore, and explicit recovery.
 - `assets/dream-skin.css`: full visual layer.
 - `assets/renderer-inject.js`: idempotent DOM integration and cleanup.
-- `assets/dream-reference.png`: user-provided visual reference used only in cropped decorative regions.
+- `assets/dream-reference.png`: bundled compatibility image used by the default home-card presentation.
 - `references/qa-inventory.md`: required functional and visual signoff coverage.
 - `references/runtime-notes.md`: troubleshooting and update behavior.
 - `tests/run-tests.ps1`: configuration, state, recovery, payload, and CDP validation regression checks.

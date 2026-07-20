@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "purple-night",
+  "name": "紫夜限定",
+  "description": "午夜紫、玫红霓虹与柔光暗面板",
+  "scheme": "light",
+  "brandTitle": "紫夜限定",
+  "brandSubtitle": "MIDNIGHT CODING CLUB",
+  "signature": "After Dark ♡",
+  "note": "☾",
+  "ribbon": "☾  PURPLE NIGHT  ✦",
+  "colors": {
+    "background": "#FAF3FF",
+    "backgroundAlt": "#E7D5F5",
+    "panel": "#FFF9FF",
+    "panelAlt": "#F1E3FA",
+    "accent": "#D968FF",
+    "accentAlt": "#FF5FAE",
+    "secondary": "#9B79FF",
+    "highlight": "#6A218D",
+    "ink": "#3A1C4D",
+    "muted": "#80608C",
+    "line": "#BE9BCB",
+    "onAccent": "#FFFFFF"
+  }
+}

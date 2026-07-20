@@ -130,10 +130,26 @@ try {
     if ($Uninstall) {
       $desktop = [Environment]::GetFolderPath('Desktop')
       $startMenu = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs'
+      $skillRoot = Split-Path -Parent $PSScriptRoot
+      $shortcutRoot = Join-Path $skillRoot 'shortcuts'
       @(
         (Join-Path $desktop 'Codex Dream Skin.lnk'),
+        (Join-Path $desktop '安装 Codex Dream Skin.lnk'),
         (Join-Path $desktop 'Codex Dream Skin - Restore.lnk'),
-        (Join-Path $startMenu 'Codex Dream Skin.lnk')
+        (Join-Path $desktop '切换 Codex Dream Skin 主题.lnk'),
+        (Join-Path $desktop '更换 Codex Dream Skin 图片.lnk'),
+        (Join-Path $desktop '恢复 Codex Dream Skin 默认图片.lnk'),
+        (Join-Path $startMenu 'Codex Dream Skin.lnk'),
+        (Join-Path $startMenu '安装 Codex Dream Skin.lnk'),
+        (Join-Path $startMenu 'Codex Dream Skin - Restore.lnk'),
+        (Join-Path $startMenu '切换 Codex Dream Skin 主题.lnk'),
+        (Join-Path $startMenu '更换 Codex Dream Skin 图片.lnk'),
+        (Join-Path $startMenu '恢复 Codex Dream Skin 默认图片.lnk'),
+        (Join-Path $shortcutRoot '安装 Codex Dream Skin.lnk'),
+        (Join-Path $shortcutRoot 'Codex Dream Skin - Restore.lnk'),
+        (Join-Path $shortcutRoot '切换 Codex Dream Skin 主题.lnk'),
+        (Join-Path $shortcutRoot '更换 Codex Dream Skin 图片.lnk'),
+        (Join-Path $shortcutRoot '恢复 Codex Dream Skin 默认图片.lnk')
       ) | ForEach-Object { Remove-Item -LiteralPath $_ -Force -ErrorAction SilentlyContinue }
     }
 

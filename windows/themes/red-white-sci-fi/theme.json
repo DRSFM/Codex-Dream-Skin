@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "red-white-sci-fi",
+  "name": "红白科幻",
+  "description": "冷白机舱、信号红与石墨灰",
+  "scheme": "light",
+  "brandTitle": "RED / WHITE SYSTEM",
+  "brandSubtitle": "CODEX TACTICAL INTERFACE",
+  "signature": "SYSTEM ONLINE ◈",
+  "note": "◆",
+  "ribbon": "◈  RED//WHITE  ◈",
+  "colors": {
+    "background": "#F8F9FC",
+    "backgroundAlt": "#E9ECF2",
+    "panel": "#FFFFFF",
+    "panelAlt": "#F2F4F8",
+    "accent": "#E0202C",
+    "accentAlt": "#353B45",
+    "secondary": "#FF5864",
+    "highlight": "#760B14",
+    "ink": "#241E22",
+    "muted": "#6E666C",
+    "line": "#D8A2A6",
+    "onAccent": "#FFFFFF"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "crystal-clear",
+  "name": "清透定制",
+  "description": "冰蓝玻璃、浅青高光与清爽留白",
+  "scheme": "light",
+  "brandTitle": "清透工作台",
+  "brandSubtitle": "CLEAR MIND · CLEAN CODE",
+  "signature": "Breathe & Build ❄",
+  "note": "◇",
+  "ribbon": "·  ❄  ·",
+  "colors": {
+    "background": "#F4FBFF",
+    "backgroundAlt": "#E2F3FB",
+    "panel": "#FBFEFF",
+    "panelAlt": "#EAF8FC",
+    "accent": "#35B8D4",
+    "accentAlt": "#628DFF",
+    "secondary": "#7ADDE1",
+    "highlight": "#17647E",
+    "ink": "#183F50",
+    "muted": "#5D7D89",
+    "line": "#9BCFD9",
+    "onAccent": "#FFFFFF"
+  }
+}

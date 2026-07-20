@@ -309,6 +309,106 @@ try {
     throw 'Stale state was not preserved under an archive name.'
   }
 
+  $installerSource = Get-Content -LiteralPath (Join-Path $Root 'scripts\install-dream-skin.ps1') -Raw
+  if ([regex]::Matches($installerSource, [regex]::Escape('foreach ($folder in @($desktop, $startMenu))')).Count -ne 1) {
+    throw 'Installer must create only the main launch shortcut on Desktop and the Start menu.'
+  }
+  foreach ($requiredShortcutRule in @(
+    "`$shortcutRoot = Join-Path `$SkillRoot 'shortcuts'",
+    '$shell.CreateShortcut((Join-Path $shortcutRoot $utility.Name))',
+    "`$shell.CreateShortcut((Join-Path `$shortcutRoot 'Codex Dream Skin - Restore.lnk'))"
+  )) {
+    if (-not $installerSource.Contains($requiredShortcutRule)) {
+      throw "Installer is missing the repository-local shortcut rule: $requiredShortcutRule"
+    }
+  }
+  foreach ($forbiddenDesktopShortcut in @(
+    "Join-Path `$desktop 'Codex Dream Skin - Restore.lnk'",
+    'Join-Path $desktop $utility.Name'
+  )) {
+    if ($installerSource.Contains($forbiddenDesktopShortcut)) {
+      throw "Installer still creates a utility shortcut on Desktop: $forbiddenDesktopShortcut"
+    }
+  }
+  foreach ($legacyShortcutName in @(
+    '安装 Codex Dream Skin.lnk',
+    'Codex Dream Skin - Restore.lnk',
+    '切换 Codex Dream Skin 主题.lnk',
+    '更换 Codex Dream Skin 图片.lnk',
+    '恢复 Codex Dream Skin 默认图片.lnk'
+  )) {
+    if (-not $installerSource.Contains("'$legacyShortcutName'")) {
+      throw "Installer does not migrate the legacy shortcut layout: $legacyShortcutName"
+    }
+  }
+
+  $projectRoot = Split-Path -Parent $Root
+  $customizer = Join-Path $projectRoot 'customize-dream-skin-image.ps1'
+  $testLocalAppData = Join-Path $temporaryRoot 'local-app-data'
+  $previousLocalAppData = $env:LOCALAPPDATA
+  try {
+    $env:LOCALAPPDATA = $testLocalAppData
+    & $customizer -ImagePath (Join-Path $Root 'assets\dream-reference.png') `
+      -Mode full-window -NoApply
+    $testCustomRoot = Join-Path $testLocalAppData 'CodexDreamSkin\custom'
+    $testModePath = Join-Path $testCustomRoot 'image-mode.txt'
+    if ((Get-Content -LiteralPath $testModePath -Raw).Trim() -cne 'full-window' -or
+      @(Get-ChildItem -LiteralPath $testCustomRoot -Filter 'custom-image.*' -File).Count -ne 1) {
+      throw 'Image customizer did not persist full-window mode and one managed image.'
+    }
+    $modeTestNode = Get-DreamSkinNodeRuntime
+    $fullWindowPayload = & $modeTestNode.Path (Join-Path $Root 'scripts\injector.mjs') --check-payload |
+      ConvertFrom-Json
+    if ($fullWindowPayload.presentation -cne 'full-window') {
+      throw 'Injector did not load the persisted full-window image mode.'
+    }
+    & $customizer -ImagePath (Join-Path $Root 'assets\dream-reference.png') `
+      -Mode home-card -NoApply
+    if ((Get-Content -LiteralPath $testModePath -Raw).Trim() -cne 'home-card') {
+      throw 'Image customizer did not preserve the optional home-card presentation.'
+    }
+    $homeCardPayload = & $modeTestNode.Path (Join-Path $Root 'scripts\injector.mjs') --check-payload |
+      ConvertFrom-Json
+    if ($homeCardPayload.presentation -cne 'home-card') {
+      throw 'Injector did not load the persisted home-card image mode.'
+    }
+  } finally {
+    $env:LOCALAPPDATA = $previousLocalAppData
+  }
+
+  $rendererSource = Get-Content -LiteralPath (Join-Path $Root 'assets\renderer-inject.js') -Raw
+  $skinCss = Get-Content -LiteralPath (Join-Path $Root 'assets\dream-skin.css') -Raw
+  $injectorSource = Get-Content -LiteralPath (Join-Path $Root 'scripts\injector.mjs') -Raw
+  foreach ($adaptiveContract in @(
+    'dream-art-full-window',
+    'dream-art-home-card',
+    '--dream-art-position',
+    'analyzeArt'
+  )) {
+    if (-not $rendererSource.Contains($adaptiveContract)) {
+      throw "Renderer is missing the adaptive image contract: $adaptiveContract"
+    }
+  }
+  foreach ($fullWindowRule in @(
+    'html.codex-dream-skin.dream-art-full-window body',
+    'background-image: var(--dream-art) !important',
+    'main.main-surface.dream-home-shell',
+    'main.main-surface:not(.dream-home-shell)'
+  )) {
+    if (-not $skinCss.Contains($fullWindowRule)) {
+      throw "CSS is missing a full-window background rule: $fullWindowRule"
+    }
+  }
+  foreach ($liveReloadContract in @(
+    'readPayloadSourceStamp',
+    'candidate.fingerprint !== loadedPayload.fingerprint',
+    'live theme updated'
+  )) {
+    if (-not $injectorSource.Contains($liveReloadContract)) {
+      throw "Injector is missing live image/theme reload behavior: $liveReloadContract"
+    }
+  }
+
   $node = Get-DreamSkinNodeRuntime
   & $node.Path (Join-Path $Root 'scripts\injector.mjs') --self-test *> $null
   if ($LASTEXITCODE -ne 0) { throw 'Injector CDP self-test failed.' }

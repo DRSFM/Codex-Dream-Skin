@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "pink-dream",
+  "name": "粉系定制",
+  "description": "柔和粉紫、珍珠白与梦幻高光",
+  "scheme": "light",
+  "brandTitle": "粉系专属定制皮肤",
+  "brandSubtitle": "CODEX DREAM SKIN ✦",
+  "signature": "Dream in Pink ♡",
+  "note": "♫",
+  "ribbon": "♡  🎀  ✦",
+  "colors": {
+    "background": "#FFF9FC",
+    "backgroundAlt": "#F3EAFD",
+    "panel": "#FFFAFD",
+    "panelAlt": "#FFEFF7",
+    "accent": "#FF73BD",
+    "accentAlt": "#B45CFF",
+    "secondary": "#F6A1D1",
+    "highlight": "#7C2EA8",
+    "ink": "#4C2364",
+    "muted": "#8B668D",
+    "line": "#E5A5CA",
+    "onAccent": "#FFFFFF"
+  }
+}
