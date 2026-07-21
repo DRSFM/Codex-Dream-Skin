@@ -11,6 +11,14 @@
 
 这次实验的核心是“复用外观资源”，不是复制登录环境。
 
+## 2026-07-21 实验进展
+
+- 已在皮肤仓库实现实例级 state、日志、custom-root、CDP 端口和 `--user-data-dir` 归属校验。
+- 已将当前 `custom-image.jpg`、`full-window` 模式和 `crystal-clear` 主题复制到 `%LOCALAPPDATA%\CodexDreamSkin\instances\anyrouter\custom`；未写入 anyrouter Desktop 数据目录。
+- 已通过 apicodex profile 环境启动 anyrouter：使用 `C:\Users\SFM\.apicodex-desktop\anyrouter` 和 loopback 9336；当前账号的 9335 实例保持运行。
+- 已验证 anyrouter 主页与已有任务页，皮肤 verify 通过；也已执行 anyrouter 独立 restore，确认 9335、muyuanpub 进程和默认 state 不受影响，然后重新启动 anyrouter。
+- apicodex 源码入口位于 `D:\codex项目\apiclaude-codex`；本机 PATH 中的 `C:\tools\apicodex.bat` 仍可能指向另一份副本，实验时必须明确使用已修改源码入口或同步安装副本。
+
 ## 当前工作区
 
 - 皮肤仓库：`E:\新版codex工作区\codex皮肤`

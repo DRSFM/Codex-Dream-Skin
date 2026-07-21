@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "mode": "code",
+  "watch_paths": [],
+  "exclude_directories": [
+    ".git",
+    ".work-progress",
+    "node_modules",
+    ".venv",
+    "venv",
+    "dist",
+    "build",
+    "target"
+  ],
+  "max_files": 5000,
+  "max_file_size_mb": 10
+}

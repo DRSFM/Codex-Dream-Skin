@@ -3,23 +3,30 @@ param(
   [int]$Port = 9335,
   [switch]$RestartExisting,
   [switch]$PromptRestart,
+  [string]$InstanceId = 'default',
   [string]$ProfilePath,
   [switch]$ForegroundInjector
 )
 
 $ErrorActionPreference = 'Stop'
 $PortExplicit = $PSBoundParameters.ContainsKey('Port')
+$ProfileExplicit = $PSBoundParameters.ContainsKey('ProfilePath')
 $Injector = Join-Path $PSScriptRoot 'injector.mjs'
 . (Join-Path $PSScriptRoot 'common-windows.ps1')
 
 $operationLock = Enter-DreamSkinOperationLock
 try {
   Assert-DreamSkinPort -Port $Port
+  Assert-DreamSkinInstanceId -InstanceId $InstanceId
   if ($ProfilePath) { $ProfilePath = [System.IO.Path]::GetFullPath($ProfilePath) }
+  if ($InstanceId -cne 'default' -and -not $ProfilePath) {
+    throw 'A non-default Dream Skin instance requires an explicit -ProfilePath.'
+  }
   $node = Get-DreamSkinNodeRuntime
   $currentCodex = Get-DreamSkinCodexInstall
   $codex = $currentCodex
-  $StateRoot = Join-Path $env:LOCALAPPDATA 'CodexDreamSkin'
+  $StateRoot = Get-DreamSkinInstanceStateRoot -InstanceId $InstanceId
+  $CustomRoot = Get-DreamSkinInstanceCustomRoot -InstanceId $InstanceId
   $StatePath = Join-Path $StateRoot 'state.json'
   $StdoutPath = Join-Path $StateRoot 'injector.log'
   $StderrPath = Join-Path $StateRoot 'injector-error.log'
@@ -27,6 +34,19 @@ try {
   New-Item -ItemType Directory -Force -Path $StateRoot | Out-Null
 
   $previousState = Read-DreamSkinState -Path $StatePath
+  if ($null -ne $previousState -and $previousState.instanceId -and
+    "$($previousState.instanceId)" -cne $InstanceId) {
+    throw "Dream Skin state belongs to another instance: $($previousState.instanceId)"
+  }
+  if (-not $ProfileExplicit -and $null -ne $previousState -and $previousState.profilePath) {
+    $ProfilePath = [System.IO.Path]::GetFullPath("$($previousState.profilePath)")
+  }
+  $MatchProfile = [bool]($ProfileExplicit -or $InstanceId -cne 'default' -or
+    ($null -ne $previousState -and @($previousState.PSObject.Properties.Name) -contains 'profilePath'))
+  if ($null -ne $previousState -and $previousState.profilePath -and
+    -not (Test-DreamSkinPathEqual -Left "$($previousState.profilePath)" -Right $ProfilePath)) {
+    throw 'The requested profile does not match the saved Dream Skin instance state.'
+  }
   if (-not $PortExplicit -and $null -ne $previousState -and $previousState.port) {
     $savedPort = [int]$previousState.port
     Assert-DreamSkinPort -Port $savedPort
@@ -38,21 +58,27 @@ try {
     (Test-DreamSkinPathEqual -Left $savedPathCandidate.PackageRoot -Right $currentCodex.PackageRoot) -and
     (Test-DreamSkinPathEqual -Left $savedPathCandidate.Executable -Right $currentCodex.Executable))
   if ($null -ne $savedPathCandidate -and $null -eq $savedCodex -and -not $candidateMatchesCurrent) {
-    $unverifiedSavedRunning = (Get-DreamSkinCodexProcesses -Codex $savedPathCandidate).Count -gt 0
-    $unverifiedSavedOwnsPort = Test-DreamSkinCodexPortOwner -Port $Port -Codex $savedPathCandidate
+    $unverifiedSavedRunning = (Get-DreamSkinCodexProcesses -Codex $savedPathCandidate `
+      -ProfilePath $ProfilePath -MatchProfile:$MatchProfile).Count -gt 0
+    $unverifiedSavedOwnsPort = Test-DreamSkinCodexPortOwner -Port $Port -Codex $savedPathCandidate `
+      -ProfilePath $ProfilePath -MatchProfile:$MatchProfile
     if ($unverifiedSavedRunning -or $unverifiedSavedOwnsPort) {
       throw 'The saved Codex path is still active but no longer matches a registered OpenAI.Codex package. Close it manually; state was preserved.'
     }
   }
 
-  $currentProcesses = Get-DreamSkinCodexProcesses -Codex $currentCodex
+  $currentProcesses = Get-DreamSkinCodexProcesses -Codex $currentCodex `
+    -ProfilePath $ProfilePath -MatchProfile:$MatchProfile
   $codexToStop = $currentCodex
-  $cdpIdentity = Get-DreamSkinVerifiedCdpIdentity -Port $Port -Codex $currentCodex
+  $cdpIdentity = Get-DreamSkinVerifiedCdpIdentity -Port $Port -Codex $currentCodex `
+    -ProfilePath $ProfilePath -MatchProfile:$MatchProfile
   $savedIsDifferent = [bool]($null -ne $savedCodex -and
     -not (Test-DreamSkinPathEqual -Left $savedCodex.Executable -Right $currentCodex.Executable))
   if ($savedIsDifferent) {
-    $savedProcesses = Get-DreamSkinCodexProcesses -Codex $savedCodex
-    $savedOwnsPort = Test-DreamSkinCodexPortOwner -Port $Port -Codex $savedCodex
+    $savedProcesses = Get-DreamSkinCodexProcesses -Codex $savedCodex `
+      -ProfilePath $ProfilePath -MatchProfile:$MatchProfile
+    $savedOwnsPort = Test-DreamSkinCodexPortOwner -Port $Port -Codex $savedCodex `
+      -ProfilePath $ProfilePath -MatchProfile:$MatchProfile
     if ($currentProcesses.Count -gt 0 -and ($savedProcesses.Count -gt 0 -or $savedOwnsPort)) {
       throw 'Multiple registered Codex package versions are active. Close them manually before starting Dream Skin.'
     }
@@ -60,7 +86,8 @@ try {
       if ($savedOwnsPort -and $savedProcesses.Count -eq 0) {
         throw 'The saved Codex listener is active but its process cannot be managed safely; state was preserved.'
       }
-      $savedIdentity = Get-DreamSkinVerifiedCdpIdentity -Port $Port -Codex $savedCodex
+      $savedIdentity = Get-DreamSkinVerifiedCdpIdentity -Port $Port -Codex $savedCodex `
+        -ProfilePath $ProfilePath -MatchProfile:$MatchProfile
       if ($null -ne $savedIdentity) {
         $codex = $savedCodex
         $codexToStop = $savedCodex
@@ -76,7 +103,7 @@ try {
   $codexProcesses = if (Test-DreamSkinPathEqual -Left $codexToStop.Executable -Right $currentCodex.Executable) {
     $currentProcesses
   } else {
-    Get-DreamSkinCodexProcesses -Codex $codexToStop
+    Get-DreamSkinCodexProcesses -Codex $codexToStop -ProfilePath $ProfilePath -MatchProfile:$MatchProfile
   }
   $closedExistingCodex = $false
   if (-not $debugReady -and $codexProcesses.Count -gt 0) {
@@ -91,49 +118,50 @@ try {
     if (-not $restartAuthorized) {
       throw 'Codex is open without a verified Dream Skin CDP endpoint. Close it first or explicitly use -RestartExisting.'
     }
-    Stop-DreamSkinCodex -Codex $codexToStop -AllowForce
+    Stop-DreamSkinCodex -Codex $codexToStop -ProfilePath $ProfilePath -MatchProfile:$MatchProfile -AllowForce
     $closedExistingCodex = $true
     $codex = $currentCodex
   }
 
   $launchedWithCdp = $false
   try {
-    if ($null -eq (Get-DreamSkinVerifiedCdpIdentity -Port $Port -Codex $codex)) {
+    if ($null -eq (Get-DreamSkinVerifiedCdpIdentity -Port $Port -Codex $codex `
+        -ProfilePath $ProfilePath -MatchProfile:$MatchProfile)) {
       if (-not (Test-DreamSkinPortAvailable -Port $Port)) {
         if ($PortExplicit) { throw "Port $Port is already occupied by an unverified listener. Choose another port." }
         $Port = Select-DreamSkinPort -PreferredPort $Port
       }
-      $arguments = @('--remote-debugging-address=127.0.0.1', "--remote-debugging-port=$Port")
-      if ($ProfilePath) {
-        New-Item -ItemType Directory -Force -Path $ProfilePath | Out-Null
-        $arguments += ConvertTo-DreamSkinProcessArgument -Value "--user-data-dir=$ProfilePath"
-      }
-      Start-Process -FilePath $codex.Executable -ArgumentList $arguments | Out-Null
+      Start-DreamSkinCodexProcess -Codex $codex -ProfilePath $ProfilePath -Port $Port -EnableCdp
       $launchedWithCdp = $true
     }
 
     $deadline = (Get-Date).AddSeconds(45)
-    $cdpIdentity = Get-DreamSkinVerifiedCdpIdentity -Port $Port -Codex $codex
+    $cdpIdentity = Get-DreamSkinVerifiedCdpIdentity -Port $Port -Codex $codex `
+      -ProfilePath $ProfilePath -MatchProfile:$MatchProfile
     while ($null -eq $cdpIdentity) {
       if ((Get-Date) -ge $deadline) {
         throw "Codex did not expose a verified loopback CDP endpoint on port $Port within 45 seconds."
       }
       Start-Sleep -Milliseconds 400
-      $cdpIdentity = Get-DreamSkinVerifiedCdpIdentity -Port $Port -Codex $codex
+      $cdpIdentity = Get-DreamSkinVerifiedCdpIdentity -Port $Port -Codex $codex `
+        -ProfilePath $ProfilePath -MatchProfile:$MatchProfile
     }
   } catch {
     $launchError = $_
     if ($launchedWithCdp) {
-      try { Stop-DreamSkinCodex -Codex $codex -AllowForce } catch {
+      try {
+        Stop-DreamSkinCodex -Codex $codex -ProfilePath $ProfilePath -MatchProfile:$MatchProfile -AllowForce
+      } catch {
         Write-Warning 'Launch rollback could not fully close the failed CDP session.'
       }
     }
     if (($closedExistingCodex -or $launchedWithCdp) -and
-      (Get-DreamSkinCodexProcesses -Codex $codex).Count -eq 0) {
+      (Get-DreamSkinCodexProcesses -Codex $codex -ProfilePath $ProfilePath `
+        -MatchProfile:$MatchProfile).Count -eq 0) {
       if ($launchedWithCdp) {
         Write-Warning 'Dream Skin launch failed; reopening Codex without a debugging port.'
       }
-      try { Start-Process -FilePath $codex.Executable | Out-Null } catch {
+      try { Start-DreamSkinCodexProcess -Codex $codex -ProfilePath $ProfilePath } catch {
         Write-Warning 'Launch rollback could not reopen Codex automatically.'
       }
     }
@@ -149,8 +177,8 @@ try {
   } catch {
     if ($launchedWithCdp) {
       try {
-        Stop-DreamSkinCodex -Codex $codex -AllowForce
-        Start-Process -FilePath $codex.Executable | Out-Null
+        Stop-DreamSkinCodex -Codex $codex -ProfilePath $ProfilePath -MatchProfile:$MatchProfile -AllowForce
+        Start-DreamSkinCodexProcess -Codex $codex -ProfilePath $ProfilePath
       } catch {
         Write-Warning 'State validation rollback could not fully restart Codex; close Codex to ensure its CDP port is closed.'
       }
@@ -162,17 +190,30 @@ try {
     Remove-Item -LiteralPath $StatePath -Force -ErrorAction SilentlyContinue
     Exit-DreamSkinOperationLock -Mutex $operationLock
     $operationLock = $null
-    & $node.Path $Injector --watch --port $Port --browser-id $cdpIdentity.BrowserId
-    exit $LASTEXITCODE
+    $savedAuthentication = Suspend-DreamSkinAuthenticationEnvironment
+    try {
+      & $node.Path $Injector --watch --port $Port --browser-id $cdpIdentity.BrowserId `
+        --custom-root $CustomRoot
+      $foregroundExitCode = $LASTEXITCODE
+    } finally {
+      Restore-DreamSkinAuthenticationEnvironment -Saved $savedAuthentication
+    }
+    exit $foregroundExitCode
   }
 
   $state = $null
   $daemon = $null
   try {
     $injectorArgs = @((ConvertTo-DreamSkinProcessArgument -Value $Injector), '--watch', '--port', "$Port",
-      '--browser-id', $cdpIdentity.BrowserId)
-    $daemon = Start-Process -FilePath $node.Path -ArgumentList $injectorArgs -WindowStyle Hidden -PassThru `
-      -RedirectStandardOutput $StdoutPath -RedirectStandardError $StderrPath
+      '--browser-id', $cdpIdentity.BrowserId, '--custom-root',
+      (ConvertTo-DreamSkinProcessArgument -Value $CustomRoot))
+    $savedAuthentication = Suspend-DreamSkinAuthenticationEnvironment
+    try {
+      $daemon = Start-Process -FilePath $node.Path -ArgumentList $injectorArgs -WindowStyle Hidden -PassThru `
+        -RedirectStandardOutput $StdoutPath -RedirectStandardError $StderrPath
+    } finally {
+      Restore-DreamSkinAuthenticationEnvironment -Saved $savedAuthentication
+    }
     Start-Sleep -Milliseconds 500
     if ($daemon.HasExited) { throw "The injector exited during startup. See $StderrPath" }
 
@@ -181,6 +222,7 @@ try {
     $state = [pscustomobject]@{
       schemaVersion = 3
       platform = 'windows'
+      instanceId = $InstanceId
       port = $Port
       injectorPid = $daemon.Id
       injectorStartedAt = $injectorStartedAt
@@ -194,13 +236,19 @@ try {
       codexVersion = $codex.Version
       browserId = $cdpIdentity.BrowserId
       profilePath = $ProfilePath
+      customRoot = $CustomRoot
       createdAt = (Get-Date).ToUniversalTime().ToString('o')
     }
     Write-DreamSkinState -Path $StatePath -State $state
 
-    $verifyOutput = @(& $node.Path $Injector --verify --port $Port --browser-id $cdpIdentity.BrowserId `
-      --timeout-ms 30000 2>&1)
-    $verifyExitCode = $LASTEXITCODE
+    $savedAuthentication = Suspend-DreamSkinAuthenticationEnvironment
+    try {
+      $verifyOutput = @(& $node.Path $Injector --verify --port $Port --browser-id $cdpIdentity.BrowserId `
+        --custom-root $CustomRoot --timeout-ms 30000 2>&1)
+      $verifyExitCode = $LASTEXITCODE
+    } finally {
+      Restore-DreamSkinAuthenticationEnvironment -Saved $savedAuthentication
+    }
     Write-DreamSkinUtf8FileAtomically -Path $VerifyPath -Content (($verifyOutput -join "`r`n") + "`r`n")
     if ($verifyExitCode -ne 0) { throw "Dream Skin verification failed. See $VerifyPath" }
   } catch {
@@ -225,7 +273,8 @@ try {
     }
     if ($injectorStopped -and -not $launchedWithCdp) {
       try {
-        $rollbackIdentity = Get-DreamSkinVerifiedCdpIdentity -Port $Port -Codex $codex
+        $rollbackIdentity = Get-DreamSkinVerifiedCdpIdentity -Port $Port -Codex $codex `
+          -ProfilePath $ProfilePath -MatchProfile:$MatchProfile
         if ($null -ne $rollbackIdentity -and $rollbackIdentity.BrowserId -ceq $cdpIdentity.BrowserId) {
           & $node.Path $Injector --remove --port $Port --browser-id $cdpIdentity.BrowserId `
             --timeout-ms 5000 *> $null
@@ -238,8 +287,8 @@ try {
     if ($injectorStopped) { Remove-Item -LiteralPath $StatePath -Force -ErrorAction SilentlyContinue }
     if ($launchedWithCdp) {
       try {
-        Stop-DreamSkinCodex -Codex $codex -AllowForce
-        Start-Process -FilePath $codex.Executable | Out-Null
+        Stop-DreamSkinCodex -Codex $codex -ProfilePath $ProfilePath -MatchProfile:$MatchProfile -AllowForce
+        Start-DreamSkinCodexProcess -Codex $codex -ProfilePath $ProfilePath
       } catch {
         Write-Warning 'Startup rollback could not fully restart Codex; close Codex to ensure its CDP port is closed.'
       }

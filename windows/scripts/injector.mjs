@@ -34,6 +34,7 @@ function parseArgs(argv) {
     screenshot: null,
     reload: false,
     browserId: null,
+    customRoot: null,
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -44,6 +45,7 @@ function parseArgs(argv) {
     else if (arg === "--remove") options.mode = "remove";
     else if (arg === "--timeout-ms") options.timeoutMs = Number(argv[++i]);
     else if (arg === "--browser-id") options.browserId = argv[++i];
+    else if (arg === "--custom-root") options.customRoot = path.resolve(argv[++i]);
     else if (arg === "--screenshot") options.screenshot = path.resolve(argv[++i]);
     else if (arg === "--reload") options.reload = true;
     else if (arg === "--self-test") options.mode = "self-test";
@@ -282,7 +284,8 @@ async function connectBrowserIdentityAnchor(port, expectedBrowserId) {
   return new BrowserIdentityAnchor(validatedDebuggerUrl(version, port)).open();
 }
 
-function customStateRoot() {
+function customStateRoot(explicitRoot = null) {
+  if (explicitRoot) return explicitRoot;
   return process.env.LOCALAPPDATA
     ? path.join(process.env.LOCALAPPDATA, "CodexDreamSkin", "custom")
     : null;
@@ -307,7 +310,7 @@ function normalizedUnit(value, name) {
 }
 
 async function loadTheme() {
-  const customRoot = customStateRoot();
+  const customRoot = customStateRoot(options.customRoot);
   const selectorPath = customRoot ? path.join(customRoot, "active-theme.txt") : null;
   let themeId = DEFAULT_THEME_ID;
   const selectedTheme = selectorPath ? await readOptionalText(selectorPath) : null;
@@ -366,7 +369,7 @@ async function loadTheme() {
 
 async function loadArt() {
   const defaultPath = path.join(root, "assets", "dream-reference.png");
-  const customRoot = customStateRoot();
+  const customRoot = customStateRoot(options.customRoot);
   const candidates = customRoot
     ? [...ART_MIME_TYPES.keys()].map((extension) => path.join(customRoot, `custom-image${extension}`))
     : [];
@@ -388,7 +391,7 @@ async function loadArt() {
 }
 
 async function loadPresentation(theme) {
-  const customRoot = customStateRoot();
+  const customRoot = customStateRoot(options.customRoot);
   const modePath = customRoot ? path.join(customRoot, "image-mode.txt") : null;
   const modeText = modePath ? await readOptionalText(modePath) : null;
   const presentation = modeText === null ? theme.art.presentation : modeText.trim();

@@ -29,8 +29,10 @@
 |------|------|
 | 源码（本整理包） | `Codex-Dream-Skin/windows/` |
 | 工具快捷方式 | `Codex-Dream-Skin/windows/shortcuts/`（桌面仅保留主启动入口） |
-| 状态 / 日志 | `%LOCALAPPDATA%\CodexDreamSkin` |
-| 活动主题 / 自定义图 | `%LOCALAPPDATA%\CodexDreamSkin\custom` |
+| 默认实例状态 / 日志 | `%LOCALAPPDATA%\CodexDreamSkin` |
+| 非默认实例状态 / 日志 | `%LOCALAPPDATA%\CodexDreamSkin\instances\<id>` |
+| 默认实例主题 / 自定义图 | `%LOCALAPPDATA%\CodexDreamSkin\custom` |
+| 非默认实例主题 / 自定义图 | `%LOCALAPPDATA%\CodexDreamSkin\instances\<id>\custom` |
 | 图片显示模式 | `%LOCALAPPDATA%\CodexDreamSkin\custom\image-mode.txt`（`full-window` / `home-card`） |
 | Codex 配置 | `%USERPROFILE%\.codex\config.toml` |
 | 默认 CDP 端口 | 首选 `9335`，冲突时自动选空闲口（Mac 包默认从 `9341` 起） |
@@ -48,6 +50,8 @@
 | 官方签名校验 | ✅ | Store 签名类型 + 包身份 |
 | 客户部署提示词 | ✅ | ❌（可用 Mac 文案改写） |
 | 打客户 ZIP | ✅ `build-client-release.sh` | 手动压缩 `windows/` |
+
+Windows API Desktop profile 由 apicodex 管理 `CODEX_HOME`、keyring 和 Desktop 数据目录；皮肤只接收实例标识、CDP 端口与 `--user-data-dir`，不安装或恢复默认 `C:\Users\<user>\.codex\config.toml`。
 
 ## 不要放进这个目录的东西
 

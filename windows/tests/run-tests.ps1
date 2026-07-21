@@ -217,6 +217,24 @@ try {
   if ($quotedProfile -cne '"--user-data-dir=C:\Dream Skin\Profile\\"') {
     throw 'Process argument quoting did not protect spaces and a trailing backslash.'
   }
+  if ((Get-DreamSkinInstanceStateRoot -InstanceId 'default') -cne (Join-Path $env:LOCALAPPDATA 'CodexDreamSkin') -or
+    (Get-DreamSkinInstanceStateRoot -InstanceId 'anyrouter') -cne (Join-Path $env:LOCALAPPDATA 'CodexDreamSkin\instances\anyrouter')) {
+    throw 'Instance state roots are not backward-compatible or isolated.'
+  }
+  $fakeRootProcess = [pscustomobject]@{
+    ProcessId = 7001
+    ParentProcessId = 0
+    CommandLine = '"C:\Program Files\OpenAI\ChatGPT.exe" --user-data-dir="C:\Users\Test\.apicodex-desktop\anyrouter"'
+    ExecutablePath = 'C:\Program Files\OpenAI\ChatGPT.exe'
+  }
+  $detectedProfile = Get-DreamSkinProcessUserDataDir -ProcessInfo $fakeRootProcess
+  if (-not (Test-DreamSkinPathEqual -Left $detectedProfile -Right 'C:\Users\Test\.apicodex-desktop\anyrouter') -or
+    -not (Test-DreamSkinProcessProfile -ProcessInfo $fakeRootProcess `
+      -ProfilePath 'C:\Users\Test\.apicodex-desktop\anyrouter' -MatchProfile) -or
+    (Test-DreamSkinProcessProfile -ProcessInfo $fakeRootProcess `
+      -ProfilePath 'C:\Users\Test\.apicodex-desktop\muyuanpub' -MatchProfile)) {
+    throw 'Process user-data-dir parsing or profile matching failed.'
+  }
 
   $statePath = Join-Path $temporaryRoot 'state.json'
   $state = [pscustomobject]@{
@@ -236,7 +254,9 @@ try {
   Write-DreamSkinState -Path $statePath -State $state
   $loadedState = Read-DreamSkinState -Path $statePath
   if ($loadedState.schemaVersion -ne 3 -or $loadedState.port -ne 9335 -or
-    $loadedState.browserId -cne 'browser-123') { throw 'State round-trip failed.' }
+    $loadedState.browserId -cne 'browser-123' -or $loadedState.injectorStartedAt -isnot [string]) {
+    throw 'State round-trip failed or timestamp normalization is missing.'
+  }
   $missingIdentityState = [pscustomobject]@{ schemaVersion = 3; platform = 'windows'; port = 9335 }
   Write-DreamSkinState -Path $statePath -State $missingIdentityState
   $missingIdentityRejected = $false
@@ -371,6 +391,23 @@ try {
       ConvertFrom-Json
     if ($homeCardPayload.presentation -cne 'home-card') {
       throw 'Injector did not load the persisted home-card image mode.'
+    }
+    Write-DreamSkinUtf8FileAtomically -Path (Join-Path $testCustomRoot 'active-theme.txt') -Content "pink-dream`n"
+    $copyScript = Join-Path $Root 'scripts\copy-dream-skin-instance-appearance.ps1'
+    & $copyScript -InstanceId anyrouter -SourceInstanceId default | Out-Null
+    $instanceCustomRoot = Join-Path $testLocalAppData 'CodexDreamSkin\instances\anyrouter\custom'
+    $sourceImage = Get-ChildItem -LiteralPath $testCustomRoot -File -Filter 'custom-image.*' | Select-Object -First 1
+    $instanceImage = Get-ChildItem -LiteralPath $instanceCustomRoot -File -Filter 'custom-image.*' | Select-Object -First 1
+    if ($null -eq $instanceImage -or
+      (Get-FileHash -LiteralPath $sourceImage.FullName -Algorithm SHA256).Hash -cne
+      (Get-FileHash -LiteralPath $instanceImage.FullName -Algorithm SHA256).Hash -or
+      (Get-Content -LiteralPath (Join-Path $instanceCustomRoot 'active-theme.txt') -Raw).Trim() -cne 'pink-dream') {
+      throw 'Instance appearance copy did not preserve the managed image and theme.'
+    }
+    $instancePayload = & $modeTestNode.Path (Join-Path $Root 'scripts\injector.mjs') --check-payload `
+      --custom-root $instanceCustomRoot | ConvertFrom-Json
+    if ($instancePayload.presentation -cne 'home-card') {
+      throw 'Injector did not load appearance from the isolated instance custom root.'
     }
   } finally {
     $env:LOCALAPPDATA = $previousLocalAppData

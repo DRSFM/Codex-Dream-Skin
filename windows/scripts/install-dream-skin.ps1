@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
   [int]$Port = 9335,
+  [string]$InstanceId = 'default',
   [switch]$NoShortcuts
 )
 
@@ -13,6 +14,10 @@ $ProjectRoot = Split-Path -Parent $SkillRoot
 $operationLock = Enter-DreamSkinOperationLock
 try {
   Assert-DreamSkinPort -Port $Port
+  Assert-DreamSkinInstanceId -InstanceId $InstanceId
+  if ($InstanceId -cne 'default') {
+    throw 'Non-default API Desktop instances must not install into the default Codex config; use start-dream-skin.ps1 with -InstanceId and -ProfilePath.'
+  }
   $null = Get-DreamSkinNodeRuntime
   $registeredInstalls = @(Get-DreamSkinRegisteredCodexInstalls)
   if ($registeredInstalls.Count -eq 0) {

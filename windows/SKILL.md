@@ -16,6 +16,8 @@ Apply a reversible renderer skin through Chromium DevTools Protocol while launch
 5. Inspect the screenshot against `references/qa-inventory.md`. Verify both the home screen and a normal task before signing off.
 6. Run `scripts/restore-dream-skin.ps1` to remove the live skin, close the saved CDP session, and reopen Codex normally. Add `-RestoreBaseTheme` to restore only saved appearance keys, `-RecoverConfigBackup` for explicit byte-for-byte recovery of a damaged config, or `-Uninstall` to delete shortcuts. A completed config restore archives that install's backup so a later install captures a fresh baseline.
 
+For an isolated API Desktop profile, do not run the default installer. Copy appearance with `scripts\copy-dream-skin-instance-appearance.ps1`, then let the profile launcher call `scripts\start-dream-skin.ps1 -InstanceId <id> -Port <loopback-port> -ProfilePath <desktop-data-dir>`. Restore with the same `-InstanceId`; non-default restore never edits the default Codex config.
+
 ## Guardrails
 
 - Preserve the official executable, package signature, user threads, pets, plugins, and authentication state.
@@ -24,6 +26,8 @@ Apply a reversible renderer skin through Chromium DevTools Protocol while launch
 - Attach the "选择项目" treatment to Codex's real project-selector toolbar and keep the current project button clickable; never draw a disconnected replacement.
 - Keep decorative layers `pointer-events: none` and keep real buttons, navigation, and composer above them.
 - On app updates, rerun install and launch; the scripts discover the current Appx package dynamically. Saved paths are never trusted for process control unless they still match a registered package identity.
+- For isolated instances, process control also requires the ancestor process tree's normalized `--user-data-dir` to match the saved profile path; a matching executable or port alone is insufficient.
+- API credentials may be inherited only while launching the requested Codex Desktop. The injector is started after authentication variables are temporarily removed from its process environment, and those variables never enter arguments, logs, or state.
 - The default launcher scans for a free port when `9335` is occupied. An explicitly requested occupied port fails closed.
 - Keep the injection daemon running for navigation/reload resilience. Its state and logs live under `%LOCALAPPDATA%\CodexDreamSkin`.
 - CDP targets must use a same-port loopback WebSocket, belong to the current Store package, retain the launch-time Browser ID, and expose expected Codex renderer markers.

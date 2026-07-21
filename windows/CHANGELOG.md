@@ -4,6 +4,10 @@
 
 ### 新功能
 
+- Windows 皮肤现在支持实例级 state、日志、外观目录、CDP 端口和 `user-data-dir` 归属，可与 apicodex 的多个 API Desktop profile 并行运行。
+- 非默认实例的启动、验证和恢复会校验官方可执行文件、loopback 端口和祖先进程 profile；恢复不会修改默认 Codex 配置，也不会误停其他 profile。
+- 新增 anyrouter 外观复制入口，只复制受管理的背景图片、显示模式和主题 ID，不读取 Desktop 登录数据。
+- apicodex 可通过显式 Dream Skin 启动环境把认证环境交给实例化皮肤入口；API Key 不会出现在皮肤参数、日志或 state。
 - Windows 现在支持 8 套数据驱动主题：粉系定制、财神打工、红白科幻、清透定制、灵感小宇宙、紫夜限定、初音未来和舞台黑金。
 - 新增 PowerShell 7 图形主题选择器，写入用户目录中的活动主题 ID，并通过现有 CDP 会话热切换配色、文案和装饰元素。
 - 新增本地自定义图片选择与恢复入口；图片保存在 `%LOCALAPPDATA%\CodexDreamSkin\custom`，不覆盖仓库内置素材，也不会上传到网络。

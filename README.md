@@ -103,6 +103,8 @@
 
 Windows 的“更换图片”入口可选择整窗背景或原有主页图片卡片；运行中的皮肤会自动读取新的图片、主题和显示模式。
 
+API Desktop 多实例实验使用 `start-dream-skin.ps1 -InstanceId <id> -Port <loopback-port> -ProfilePath <desktop-data-dir>`；它会把状态、日志和外观资源隔离到该实例目录，不应对 API profile 运行 `install-dream-skin.ps1`。
+
 更细的说明：
 
 - Mac：[`macos/README.md`](./macos/README.md)

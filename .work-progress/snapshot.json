@@ -1,0 +1,846 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-07-21T10:02:45.1022815+08:00",
+  "root": "E:\\新版codex工作区\\codex皮肤",
+  "watch_paths": [
+    "."
+  ],
+  "git": {
+    "available": true,
+    "is_repository": true,
+    "branch": "main",
+    "head": "39e47489c50b601fd91d7e58220c3678a25976c5",
+    "status": [
+      " M README.md",
+      " M docs/APICODEX-ANYROUTER-HANDOFF.md",
+      " M docs/platforms.md",
+      " M windows/CHANGELOG.md",
+      " M windows/SKILL.md",
+      " M windows/scripts/common-windows.ps1",
+      " M windows/scripts/injector.mjs",
+      " M windows/scripts/install-dream-skin.ps1",
+      " M windows/scripts/restore-dream-skin.ps1",
+      " M windows/scripts/start-dream-skin.ps1",
+      " M windows/scripts/verify-dream-skin.ps1",
+      " M windows/tests/run-tests.ps1",
+      "?? .work-progress/",
+      "?? windows/scripts/copy-dream-skin-instance-appearance.ps1"
+    ],
+    "changed_paths": [
+      "README.md",
+      "docs/APICODEX-ANYROUTER-HANDOFF.md",
+      "docs/platforms.md",
+      "windows/CHANGELOG.md",
+      "windows/SKILL.md",
+      "windows/scripts/common-windows.ps1",
+      "windows/scripts/injector.mjs",
+      "windows/scripts/install-dream-skin.ps1",
+      "windows/scripts/restore-dream-skin.ps1",
+      "windows/scripts/start-dream-skin.ps1",
+      "windows/scripts/verify-dream-skin.ps1",
+      "windows/tests/run-tests.ps1"
+    ],
+    "staged_paths": [],
+    "diff_stat": [
+      " README.md                              |   2 +",
+      " docs/APICODEX-ANYROUTER-HANDOFF.md     |   8 ++",
+      " docs/platforms.md                      |   8 +-",
+      " windows/CHANGELOG.md                   |   4 +",
+      " windows/SKILL.md                       |   4 +",
+      " windows/scripts/common-windows.ps1     | 217 +++++++++++++++++++++++++++++----",
+      " windows/scripts/injector.mjs           |  11 +-",
+      " windows/scripts/install-dream-skin.ps1 |   5 +",
+      " windows/scripts/restore-dream-skin.ps1 |  51 ++++++--",
+      " windows/scripts/start-dream-skin.ps1   | 119 ++++++++++++------",
+      " windows/scripts/verify-dream-skin.ps1  |  41 ++++++-",
+      " windows/tests/run-tests.ps1            |  39 +++++-",
+      " 12 files changed, 424 insertions(+), 85 deletions(-)"
+    ]
+  },
+  "files": [
+    {
+      "path": ".github/ISSUE_TEMPLATE/bug_report.yml",
+      "length": 7227,
+      "last_write_utc": "2026-07-16T12:35:05.8099693Z",
+      "sha256": "04b334fa2cdf338b60b2ac29cdce53068b0ec99b1cc856a2df2a0755228fbc5d",
+      "hash_status": "ok"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/config.yml",
+      "length": 1274,
+      "last_write_utc": "2026-07-16T12:35:05.8109775Z",
+      "sha256": "9730eef3b108b9ab15cae54405a28f8787a19da17735b1cad1f1040495e21a48",
+      "hash_status": "ok"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/feature_request.yml",
+      "length": 3325,
+      "last_write_utc": "2026-07-16T12:35:05.8109775Z",
+      "sha256": "b4a642074df02e7c5a84b7acd21b34f07407155c724bb295fde72168c49483b6",
+      "hash_status": "ok"
+    },
+    {
+      "path": ".github/pull_request_template.md",
+      "length": 2462,
+      "last_write_utc": "2026-07-16T12:35:05.8119828Z",
+      "sha256": "d7991bc33170080ac026b3007d11c57b2d3319556f1b440b8601832390dcafb1",
+      "hash_status": "ok"
+    },
+    {
+      "path": ".gitignore",
+      "length": 147,
+      "last_write_utc": "2026-07-16T14:15:36.8979216Z",
+      "sha256": "a2232806c04f82d131d978c783fadb134a1500ed3219c6afafb21525f5a53d02",
+      "hash_status": "ok"
+    },
+    {
+      "path": "AGENTS.md",
+      "length": 2865,
+      "last_write_utc": "2026-07-16T12:35:05.8129857Z",
+      "sha256": "6977d8c2d5d7948f73d672ab8f0fffb6b3fdf103d568578ae2b3ca634d631aad",
+      "hash_status": "ok"
+    },
+    {
+      "path": "customize-dream-skin-image.ps1",
+      "length": 5304,
+      "last_write_utc": "2026-07-20T13:50:16.9025787Z",
+      "sha256": "d3ad230428ca85ae359b3f03b4c9e21bc30b29622684aa7b15d5784e94bc396c",
+      "hash_status": "ok"
+    },
+    {
+      "path": "docs/APICODEX-ANYROUTER-HANDOFF.md",
+      "length": 6953,
+      "last_write_utc": "2026-07-20T18:45:55.9347538Z",
+      "sha256": "956c9cbacfb7e2521daa45f35b480033846dbb21a4f7c7e5fbf90146bd37a7d2",
+      "hash_status": "ok"
+    },
+    {
+      "path": "docs/images/banner-arina-hashimoto-pure-no-ui.png",
+      "length": 1958634,
+      "last_write_utc": "2026-07-16T12:35:05.8212679Z",
+      "sha256": "7daa1b14f4622d7c1319b5ed3c3bdc93c11d6509b7a2285c57f17b3877a50539",
+      "hash_status": "ok"
+    },
+    {
+      "path": "docs/images/gallery/skin-01.jpg",
+      "length": 157199,
+      "last_write_utc": "2026-07-16T12:35:05.8243770Z",
+      "sha256": "a38eb2ec7c4a2aa701b061fba3bb250e5be96b554185b249a26bb21fc37ecd75",
+      "hash_status": "ok"
+    },
+    {
+      "path": "docs/images/gallery/skin-02.jpg",
+      "length": 208262,
+      "last_write_utc": "2026-07-16T12:35:05.8253879Z",
+      "sha256": "d7f4805aba805cca3cd6a5b4befa72150448e87695c4c077491a7ca3ff12b1fe",
+      "hash_status": "ok"
+    },
+    {
+      "path": "docs/images/gallery/skin-03.jpg",
+      "length": 96818,
+      "last_write_utc": "2026-07-16T12:35:05.8263901Z",
+      "sha256": "575c1903564df31efe0d5199f4dca4dbf65c4847009c748de669a523fc4f063b",
+      "hash_status": "ok"
+    },
+    {
+      "path": "docs/images/gallery/skin-04.jpg",
+      "length": 139929,
+      "last_write_utc": "2026-07-16T12:35:05.8284016Z",
+      "sha256": "39feb8649c08bfdef01f4352131aa8d80c99d4ed61e30ee24a6566325bef7f36",
+      "hash_status": "ok"
+    },
+    {
+      "path": "docs/images/gallery/skin-05.jpg",
+      "length": 193829,
+      "last_write_utc": "2026-07-16T12:35:05.8294042Z",
+      "sha256": "9beeca0c9c7c4e20b88342bdc3d018b26905076ea26d7bbcd0cefd7d95ad7b86",
+      "hash_status": "ok"
+    },
+    {
+      "path": "docs/images/gallery/skin-06.jpg",
+      "length": 229677,
+      "last_write_utc": "2026-07-16T12:35:05.8317283Z",
+      "sha256": "464b95ec40c5dc71d369616387ab9fca55e6d74a5ff6bc44332dd47413ae9eb2",
+      "hash_status": "ok"
+    },
+    {
+      "path": "docs/images/gallery/skin-07.jpg",
+      "length": 200722,
+      "last_write_utc": "2026-07-16T12:35:05.8332323Z",
+      "sha256": "c499ca84155d23f49695c6962ec5cee69234ded0f83f3f33465adbd646531138",
+      "hash_status": "ok"
+    },
+    {
+      "path": "docs/images/gallery/skin-08.jpg",
+      "length": 183955,
+      "last_write_utc": "2026-07-16T12:35:05.8348721Z",
+      "sha256": "ec755c0f1c10b60c27e3bb84b6c0f0431e2a2de0b59e639567b19d32f941a218",
+      "hash_status": "ok"
+    },
+    {
+      "path": "docs/images/haizeiwang.png",
+      "length": 2535848,
+      "last_write_utc": "2026-07-16T12:35:05.8428288Z",
+      "sha256": "5426d153edc865f429b1abbeadb012cacfd99797816ef07c2540faab7be7b8d5",
+      "hash_status": "ok"
+    },
+    {
+      "path": "docs/images/hero-banner-red-white.png",
+      "length": 1664709,
+      "last_write_utc": "2026-07-16T12:35:05.8477264Z",
+      "sha256": "31bde93bb02d6723e0b6aa0ead675577604120acb0a6799163dd37f5cdd0a08e",
+      "hash_status": "ok"
+    },
+    {
+      "path": "docs/images/screenshot-demo-art.png",
+      "length": 287476,
+      "last_write_utc": "2026-07-16T12:35:05.8487290Z",
+      "sha256": "fdaeef9d5989a99c856d1dfa7446127fcb6bb5404e5fb2be0177f75a5486ed44",
+      "hash_status": "ok"
+    },
+    {
+      "path": "docs/images/screenshot-macos-home.png",
+      "length": 733122,
+      "last_write_utc": "2026-07-16T12:35:05.8519939Z",
+      "sha256": "390a5344e2a9007e57f44cc5dfe50660271f53f7e71f6c60ae658ace0732fa69",
+      "hash_status": "ok"
+    },
+    {
+      "path": "docs/images/screenshot-macos-task.png",
+      "length": 996241,
+      "last_write_utc": "2026-07-16T12:35:05.8561277Z",
+      "sha256": "a396469154fb5aa2937b25b85d65713d13244d939dffb6242bf182af7fc3803f",
+      "hash_status": "ok"
+    },
+    {
+      "path": "docs/images/screenshot-windows-hero.png",
+      "length": 1267205,
+      "last_write_utc": "2026-07-16T12:35:05.8604812Z",
+      "sha256": "c089cca63b37f4b0bd870d01dd827514995c933cf38b5833c92b52547454473f",
+      "hash_status": "ok"
+    },
+    {
+      "path": "docs/images/sponsor-passion8.png",
+      "length": 55382,
+      "last_write_utc": "2026-07-16T12:35:05.8625041Z",
+      "sha256": "9c9d4f404646fd12ae7855777061ebc95602a5d909dd294941de0048db7cc6a4",
+      "hash_status": "ok"
+    },
+    {
+      "path": "docs/images/sponsor-passion8.svg",
+      "length": 929,
+      "last_write_utc": "2026-07-16T12:35:05.8625041Z",
+      "sha256": "35b82e27075c87208c9afd59ad6be3b5c327b4f2c95dfcdc895e09b978c83a68",
+      "hash_status": "ok"
+    },
+    {
+      "path": "docs/platforms.md",
+      "length": 2389,
+      "last_write_utc": "2026-07-20T18:45:55.9313442Z",
+      "sha256": "5f6427f95cb2c14602160b542e0af23b723dd9ad94031e2320611796f028e8cb",
+      "hash_status": "ok"
+    },
+    {
+      "path": "docs/PROJECT.md",
+      "length": 5779,
+      "last_write_utc": "2026-07-16T12:35:05.8139874Z",
+      "sha256": "e6c41397624cb4de8c59498ae4cc84923343e1507fc89373ddb6d1b96de2da1a",
+      "hash_status": "ok"
+    },
+    {
+      "path": "docs/promo-copy.md",
+      "length": 2179,
+      "last_write_utc": "2026-07-16T12:35:05.8635092Z",
+      "sha256": "272789ba48e9f8d6a698f5bcd06b671b08cef8d8dea52ccf31348e323e194707",
+      "hash_status": "ok"
+    },
+    {
+      "path": "install-and-start-dream-skin.ps1",
+      "length": 803,
+      "last_write_utc": "2026-07-16T12:45:35.4539118Z",
+      "sha256": "eacf151ed05d6ce95a92e38375a90fe4c830a9a1b0ecef3ee31da31122256282",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/.gitignore",
+      "length": 124,
+      "last_write_utc": "2026-07-16T12:35:05.8645145Z",
+      "sha256": "7c4eed396bee7f46a8aa186b934bc128cb4ced8a6d0e16a76b79ede6a56eb01c",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/agents/openai.yaml",
+      "length": 286,
+      "last_write_utc": "2026-07-16T12:35:05.8709687Z",
+      "sha256": "6164c20bcbaa74843bb46a0c4ad4ba0dfc2e0edd2376dd404ef995e2e4117db1",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/assets/dream-skin.css",
+      "length": 26336,
+      "last_write_utc": "2026-07-16T12:35:05.8720259Z",
+      "sha256": "e696777e5569856bd9dbdc2355e13dc8c3c5becbf2cc22cbb30b79f62bddf7f9",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/assets/portal-hero.png",
+      "length": 1664709,
+      "last_write_utc": "2026-07-16T12:35:05.8766068Z",
+      "sha256": "31bde93bb02d6723e0b6aa0ead675577604120acb0a6799163dd37f5cdd0a08e",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/assets/renderer-inject.js",
+      "length": 12743,
+      "last_write_utc": "2026-07-16T12:35:05.8766068Z",
+      "sha256": "52b5cb7d81e16d6aca31c4be4a82a06ddb0ab381cbd748325a2b40d59d8949dd",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/assets/theme.json",
+      "length": 818,
+      "last_write_utc": "2026-07-16T12:35:05.8766068Z",
+      "sha256": "39b8506c19276bcfdfe5abb220c5c31aac1bfde8470f855a31da8d9727fb2498",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/CHANGELOG.md",
+      "length": 2834,
+      "last_write_utc": "2026-07-16T12:35:05.8655395Z",
+      "sha256": "d9f36ac16d842b7fa540a10f73a8d044aa4c6aff816ba52eb7596082c0a3453f",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/CLIENT_DEPLOY_PROMPT.md",
+      "length": 4812,
+      "last_write_utc": "2026-07-16T12:35:05.8655395Z",
+      "sha256": "0ac1dc41262815e75c66c23f11752c9e49dde0b09dbb6f44777a9f0a195379b2",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/client-delivery/给 Codex 的部署提示词.md",
+      "length": 4812,
+      "last_write_utc": "2026-07-16T12:35:05.8783596Z",
+      "sha256": "0ac1dc41262815e75c66c23f11752c9e49dde0b09dbb6f44777a9f0a195379b2",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/client-delivery/使用说明.txt",
+      "length": 421,
+      "last_write_utc": "2026-07-16T12:35:05.8783596Z",
+      "sha256": "d0b3e5a4388d63dd0c746a4719587bc2bda0c2c708d34fe09085f844753cdc0f",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/Customize Codex Dream Skin.command",
+      "length": 307,
+      "last_write_utc": "2026-07-16T12:35:05.8669469Z",
+      "sha256": "266d558d3850db68841d44d350da8444b997c781771b323366f929e2cc244935",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/Install Codex Dream Skin.command",
+      "length": 124,
+      "last_write_utc": "2026-07-16T12:35:05.8669469Z",
+      "sha256": "8671c0f187ba6b14dd803388643a1add992b07eededc57e6f42e78c5322205c4",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/Install Menu Bar.command",
+      "length": 86,
+      "last_write_utc": "2026-07-16T12:35:05.8669469Z",
+      "sha256": "e4a27fc560770d49487ef713eeb30c6aaf513c9d46683f64bdf85bbfc71fcbf0",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/LICENSE",
+      "length": 1114,
+      "last_write_utc": "2026-07-16T12:35:05.8679514Z",
+      "sha256": "0e8f0b5cc9f0d8103079fa6e4caf6955ba85ef7e2a7da8683e755df361382e4c",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/menubar/codex_dream_skin.10s.sh",
+      "length": 4092,
+      "last_write_utc": "2026-07-16T12:35:05.8791683Z",
+      "sha256": "b39c01a04ea045bf59c19eb5bcc6c7b17f9908f45112102fe098545f7a35c7f7",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/NOTICE.md",
+      "length": 1431,
+      "last_write_utc": "2026-07-16T12:35:05.8679514Z",
+      "sha256": "bd538df97fbf38e94c71724bac0787719c0f3ba1535c406ef1eb92e551749f10",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/package.json",
+      "length": 251,
+      "last_write_utc": "2026-07-16T12:35:05.8796725Z",
+      "sha256": "b9574ae0274f3fff94a7c45cf44bfea363ecef9576de8bd69928d44b1ba4fe3f",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/README.md",
+      "length": 4447,
+      "last_write_utc": "2026-07-16T12:35:05.8689571Z",
+      "sha256": "9cee52bb5c03d47edef8d0cece1b034ae74a264ed289d9bebb9bcf305d6cb046",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/references/acceptance-report-2026-07-15.md",
+      "length": 1529,
+      "last_write_utc": "2026-07-16T12:35:05.8796725Z",
+      "sha256": "349f6214d7119b480785236b7929a9e26e61d4b76d1389ee7cd9f1240d3621f6",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/references/asset-provenance.md",
+      "length": 447,
+      "last_write_utc": "2026-07-16T12:35:05.8809589Z",
+      "sha256": "1b15e214cce71c1f6826f2271a2d3619aafe4284cb3e47d0a8ae8284c47945bb",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/references/incident-review.md",
+      "length": 1280,
+      "last_write_utc": "2026-07-16T12:35:05.8809589Z",
+      "sha256": "0c376897b7e0c81d21ff0fce4e635276b0e40f45efb5f2dce13c2a8ab488b356",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/references/qa-inventory.md",
+      "length": 2875,
+      "last_write_utc": "2026-07-16T12:35:05.8819656Z",
+      "sha256": "cb2a43aa96f784b89f93fce4c54f9bc042f4875b7a6984c04f84c51519bace5e",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/references/runtime-notes.md",
+      "length": 1793,
+      "last_write_utc": "2026-07-16T12:35:05.8819656Z",
+      "sha256": "23a479b5971408d16e5f8207582456a1be20e6a8bec7686ac6a8be3122d078a7",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/Restore Codex Dream Skin.command",
+      "length": 337,
+      "last_write_utc": "2026-07-16T12:35:05.8689571Z",
+      "sha256": "f72ecb504824908914d714c06154d54bbe09643fe0acd173e06379f7d1b6fcc5",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/scripts/apply-from-menubar-macos.sh",
+      "length": 2548,
+      "last_write_utc": "2026-07-16T12:35:05.8829688Z",
+      "sha256": "92f809e61ed59d295e84be777c157b0cc289effd0153a4fbb830c530993dac8e",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/scripts/build-client-release.sh",
+      "length": 1960,
+      "last_write_utc": "2026-07-16T12:35:05.8829688Z",
+      "sha256": "79fb56b93b347e05c482e169f539cb24af22a2e81f0c6b24d2cffc07fa74be47",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/scripts/build-release.sh",
+      "length": 1099,
+      "last_write_utc": "2026-07-16T12:35:05.8829688Z",
+      "sha256": "e46be8f03532df7ca788009d871813572bd9b49289691d3d461c268b6741a7b1",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/scripts/common-macos.sh",
+      "length": 20036,
+      "last_write_utc": "2026-07-16T12:35:05.8839716Z",
+      "sha256": "c2b8e79c83271bb57296ba76a69606359702ae957ee34ca07702a86f4e8ffcf3",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/scripts/customize-theme-macos.sh",
+      "length": 3213,
+      "last_write_utc": "2026-07-16T12:35:05.8839716Z",
+      "sha256": "d9e521505291c56ce11fe268145c5e23e13d360d5780180d8b0e4cdc816596c7",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/scripts/doctor-macos.sh",
+      "length": 1941,
+      "last_write_utc": "2026-07-16T12:35:05.8849791Z",
+      "sha256": "be24f47f9db2bbfeba444c074233e446760bd31ea0bf9b9c1a3334df7cf46aa1",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/scripts/injector.mjs",
+      "length": 20909,
+      "last_write_utc": "2026-07-16T12:35:05.8849791Z",
+      "sha256": "d6e809653a34bf9a5dc1093b16465f07b9b79cc1511a61f83fe371115689d891",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/scripts/install-dream-skin-macos.sh",
+      "length": 3957,
+      "last_write_utc": "2026-07-16T12:35:05.8859830Z",
+      "sha256": "3919ce37a4bed34088b156d732abc0e4e50e7d33cf1512a19a282b2bf4cbff20",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/scripts/install-menubar-macos.sh",
+      "length": 3680,
+      "last_write_utc": "2026-07-16T12:35:05.8859830Z",
+      "sha256": "d2e68362e3d2bc39883e00e6396b0a9622b18e6882cf10cc00065ce4eccfd41a",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/scripts/load-image-theme-macos.sh",
+      "length": 4169,
+      "last_write_utc": "2026-07-16T12:35:05.8870306Z",
+      "sha256": "8009ce4f222d7a4a61d5aa863a65506551855eef51d59b439fe47d6c18a7ac7d",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/scripts/pause-dream-skin-macos.sh",
+      "length": 2356,
+      "last_write_utc": "2026-07-16T12:35:05.8870306Z",
+      "sha256": "ca334070a2bffeae8994c93958298e4f87c8eded04b1a3ecee0174f7b6386940",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/scripts/restore-dream-skin-macos.sh",
+      "length": 2181,
+      "last_write_utc": "2026-07-16T12:35:05.8870306Z",
+      "sha256": "f488a0b516430f2d4f01bb59e6dd3050a7f4665b75a5bc68442df8dcbade7a6c",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/scripts/start-dream-skin-macos.sh",
+      "length": 4921,
+      "last_write_utc": "2026-07-16T12:35:05.8880330Z",
+      "sha256": "429d1e92a772aea6961d6bd7dcf8b0b14da401dbd13888a6da27443dc7cde914",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/scripts/status-dream-skin-macos.sh",
+      "length": 2950,
+      "last_write_utc": "2026-07-16T12:35:05.8880330Z",
+      "sha256": "02326fa64ce05b805592998de461289d9ff68d5e4a74c7b191447d0cb11060b5",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/scripts/switch-theme-macos.sh",
+      "length": 2088,
+      "last_write_utc": "2026-07-16T12:35:05.8890352Z",
+      "sha256": "13fddf8dab11b66ad863319156469ccb4ea35a5006f53f95401b9135134043c0",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/scripts/theme-config.mjs",
+      "length": 4527,
+      "last_write_utc": "2026-07-16T12:35:05.8890352Z",
+      "sha256": "946f6c8e14032bc0687de09dcfa6aba4a9a1ee05efb839c9ffe65ef0d84d55d4",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/scripts/verify-dream-skin-macos.sh",
+      "length": 873,
+      "last_write_utc": "2026-07-16T12:35:05.8890352Z",
+      "sha256": "e25ed66af6b1c6ee524659d28ae91d0284d51860c83fc3052d64ae82ab85bab5",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/scripts/write-theme.mjs",
+      "length": 3610,
+      "last_write_utc": "2026-07-16T12:35:05.8900377Z",
+      "sha256": "50632836a9ecbc4422b2ef600cbf8feb06726ab2e6f7d406ac40c642006786bd",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/SKILL.md",
+      "length": 2262,
+      "last_write_utc": "2026-07-16T12:35:05.8699634Z",
+      "sha256": "0cbfa492255b875f2dbf5b69f5e5050e70b84a15e3524ab6d4e77e571d9a2d89",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/Start Codex Dream Skin.command",
+      "length": 325,
+      "last_write_utc": "2026-07-16T12:35:05.8699634Z",
+      "sha256": "9b57e8e31072027c348bf6a7ae0736e57bafd3db23cd999153059bc1dd9c8add",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/tests/run-tests.sh",
+      "length": 5565,
+      "last_write_utc": "2026-07-16T12:35:05.8912191Z",
+      "sha256": "1c54bebb80a55489abd593b13553592e31af9d9130e04518095b29de90580e9e",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/Verify Codex Dream Skin.command",
+      "length": 410,
+      "last_write_utc": "2026-07-16T12:35:05.8709687Z",
+      "sha256": "9fcb8b7607431940d373ab103f7b5bc184ac9d478f6fbde8f4e11193571c7201",
+      "hash_status": "ok"
+    },
+    {
+      "path": "macos/VERSION",
+      "length": 7,
+      "last_write_utc": "2026-07-16T12:35:05.8699634Z",
+      "sha256": "8456accd9a842531ca2aa6832c731ed07597335b35bbdb470044c5365e8fdc82",
+      "hash_status": "ok"
+    },
+    {
+      "path": "README.en.md",
+      "length": 4354,
+      "last_write_utc": "2026-07-16T12:35:05.8129857Z",
+      "sha256": "0d7f7059196e196ca6ab084ead0f462223c49236a294e0cad64bf5d3a2078517",
+      "hash_status": "ok"
+    },
+    {
+      "path": "README.md",
+      "length": 4784,
+      "last_write_utc": "2026-07-20T18:45:55.9313442Z",
+      "sha256": "f625e787ed9c9bd8fb9889a8cd6427701348d885aadf50446454fb0f3597cdc4",
+      "hash_status": "ok"
+    },
+    {
+      "path": "select-dream-skin-theme.ps1",
+      "length": 7062,
+      "last_write_utc": "2026-07-16T13:58:59.9336079Z",
+      "sha256": "786f9c059009a8c408e2a829cdb6989b15aaa2380e94cb2ca6294606f8936c4e",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/agents/openai.yaml",
+      "length": 238,
+      "last_write_utc": "2026-07-16T12:35:05.8922356Z",
+      "sha256": "e5719c43d4446d9cb455a8a3309782eff35958c814b176d25c74c69941036c25",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/assets/dream-reference.png",
+      "length": 2612553,
+      "last_write_utc": "2026-07-16T12:35:05.9006309Z",
+      "sha256": "e6019a268915194e270d9ad4eb44d99c1a43c22c11463137147d9e00428375fc",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/assets/dream-skin.css",
+      "length": 33499,
+      "last_write_utc": "2026-07-20T13:49:49.0549566Z",
+      "sha256": "2151215d84988be86bf5049a9b5c29021b550921d1df214b8393f38dd9a3d7ed",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/assets/renderer-inject.js",
+      "length": 14222,
+      "last_write_utc": "2026-07-20T13:48:55.0062880Z",
+      "sha256": "0a647b984985c811f2571c5c7de0147ef8a778b2a89a49276dbe3c0d1babd2f4",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/CHANGELOG.md",
+      "length": 7487,
+      "last_write_utc": "2026-07-20T18:45:55.9337024Z",
+      "sha256": "dac2a4434cb97f187a4718bb3da8648e80d8eadd146213f2c345fbff2487af45",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/references/qa-inventory.md",
+      "length": 4400,
+      "last_write_utc": "2026-07-16T12:35:05.9026403Z",
+      "sha256": "81d1c38c05f9b06823016be9f4f9572d78a6a01936375318db42b882cfd9dee6",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/references/runtime-notes.md",
+      "length": 3271,
+      "last_write_utc": "2026-07-16T12:35:05.9036469Z",
+      "sha256": "b3a92c2131652c69bcf752c7f1ea4b5f590a1acb56fd91afbc1f44843f98a090",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/scripts/common-windows.ps1",
+      "length": 26558,
+      "last_write_utc": "2026-07-20T18:41:47.6986295Z",
+      "sha256": "b93b3a4dee25d95674200a2267502d107130a35c76f7e5b22b4779d1dc32eae3",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/scripts/config-utf8.ps1",
+      "length": 16806,
+      "last_write_utc": "2026-07-16T12:41:21.3681848Z",
+      "sha256": "604373058f4750531690f897cae840f77e890990664a9c46039b8d81fc0bcb38",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/scripts/copy-dream-skin-instance-appearance.ps1",
+      "length": 3698,
+      "last_write_utc": "2026-07-20T17:54:05.3147627Z",
+      "sha256": "f731ba7f0650894ea68d837f4647bc3c3916b64bc842e14744904074935d728b",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/scripts/injector.mjs",
+      "length": 34262,
+      "last_write_utc": "2026-07-20T17:50:00.0038084Z",
+      "sha256": "6bdb695704f504e40c45e7e0fa9ba4770aab065d03e75b93b7c8c927f07179b5",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/scripts/install-dream-skin.ps1",
+      "length": 6108,
+      "last_write_utc": "2026-07-20T17:53:37.6249915Z",
+      "sha256": "6adf003631137452eb2809da91c7c5689ae23ce6f3154b02a0669883639049c1",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/scripts/restore-dream-skin.ps1",
+      "length": 10645,
+      "last_write_utc": "2026-07-20T17:53:11.8624722Z",
+      "sha256": "c7cf0e903f1df21f9059931973ceb894be57e1678ad9824be657d173c86c41b5",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/scripts/start-dream-skin.ps1",
+      "length": 14086,
+      "last_write_utc": "2026-07-20T17:49:30.2486772Z",
+      "sha256": "25b847b8a8edfb15ba88bda2979aaf0f73e2300d338a2bc7979af28ebbfc1cf6",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/scripts/verify-dream-skin.ps1",
+      "length": 3315,
+      "last_write_utc": "2026-07-20T17:50:34.2418186Z",
+      "sha256": "5db1bde7dbf28ba74b05077a0a198c8781afb989e8a781e56a1c3cfd715f4600",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/shortcuts/安装 Codex Dream Skin.lnk",
+      "length": 1595,
+      "last_write_utc": "2026-07-16T12:45:44.6734657Z",
+      "sha256": "12a38face06d1d47bf8870183b4dd919575e613282364799ea277a377384a01e",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/shortcuts/更换 Codex Dream Skin 图片.lnk",
+      "length": 1595,
+      "last_write_utc": "2026-07-16T13:25:13.0951851Z",
+      "sha256": "19b5f6514cad6a69e1693e03180cdb6efafdf71c9541869a676ac492eb887b57",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/shortcuts/恢复 Codex Dream Skin 默认图片.lnk",
+      "length": 1601,
+      "last_write_utc": "2026-07-16T13:25:13.1906248Z",
+      "sha256": "8b7b34dc49377717ae434111bd82023f08aa356f25c615672d0a50d616a36a79",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/shortcuts/切换 Codex Dream Skin 主题.lnk",
+      "length": 1591,
+      "last_write_utc": "2026-07-16T14:04:22.6522846Z",
+      "sha256": "a3fc1efb59df446d877d7019c0bc6ddf269d6c63d0341e95792ecddf2c71c8c9",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/shortcuts/Codex Dream Skin - Restore.lnk",
+      "length": 1749,
+      "last_write_utc": "2026-07-16T13:13:04.1023909Z",
+      "sha256": "fa3d598a0a864ae84ed66174fa8645597cb4c8b4cb968664075e6784f01f64fe",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/shortcuts/README.md",
+      "length": 611,
+      "last_write_utc": "2026-07-20T13:52:03.8916770Z",
+      "sha256": "634896af3d718c36f25ab7f4a66c1cdef7763b3cbf553e61eae62b154ee84c05",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/SKILL.md",
+      "length": 5903,
+      "last_write_utc": "2026-07-20T18:45:55.9326944Z",
+      "sha256": "e0b08c6537c336c31f4c5c27f8b28bbaa16dd93d15004f09741cd6df22f4c910",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/tests/renderer-inject.test.mjs",
+      "length": 8180,
+      "last_write_utc": "2026-07-20T13:50:45.0740313Z",
+      "sha256": "c696a37ceff855fb3ffada4dcf72e94ab37080342a5641f52a034384a6a43844",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/tests/run-tests.ps1",
+      "length": 25619,
+      "last_write_utc": "2026-07-20T18:41:47.6996538Z",
+      "sha256": "7303613b205032ccba17cd045277cf2e199a454f8898a6cf8c767f98def6e927",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/themes/crystal-clear/theme.json",
+      "length": 659,
+      "last_write_utc": "2026-07-16T13:55:20.4851989Z",
+      "sha256": "f5cc69e53b3aa4b3dedd3e8ad5d81870bee84bdab7f56e524fa26652ae8f78cb",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/themes/fortune-work/theme.json",
+      "length": 677,
+      "last_write_utc": "2026-07-16T13:55:20.4841948Z",
+      "sha256": "59aa187cdb332657a049b61fc49aface6287843686b64c887e8c1532aa94b6f2",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/themes/inspiration-cosmos/theme.json",
+      "length": 660,
+      "last_write_utc": "2026-07-16T14:02:15.9507638Z",
+      "sha256": "aaf5258661f6cb688852071942ef4a7385d778289e877b29f6b28bcca259e320",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/themes/miku-future/theme.json",
+      "length": 657,
+      "last_write_utc": "2026-07-16T14:02:15.9518650Z",
+      "sha256": "2b357363bae7aa3a6a04dfc99f92c773ca957bf493b4d4ed3704b3adc6688a64",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/themes/pink-dream/theme.json",
+      "length": 659,
+      "last_write_utc": "2026-07-16T13:55:20.4836714Z",
+      "sha256": "b371686d6446f6d56c88256680c12da316c489ec2fb32fe3417c4f9d2e52b613",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/themes/purple-night/theme.json",
+      "length": 657,
+      "last_write_utc": "2026-07-16T14:02:15.9507638Z",
+      "sha256": "173242b89ab7d8e4d34ae268d03eec43a05b8b48f3b42e89b624f150138c82c5",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/themes/red-white-sci-fi/theme.json",
+      "length": 666,
+      "last_write_utc": "2026-07-16T13:55:20.4851989Z",
+      "sha256": "80c2c526556cb5bca5dbe5517f7f779c85bc99bbc00841cc57676f15a01b1b2c",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/themes/stage-black-gold/theme.json",
+      "length": 650,
+      "last_write_utc": "2026-07-16T14:02:15.9518650Z",
+      "sha256": "7338d9094007d3ce9054e84fab75adc57d258235e45026ae3703fa0df1abdafd",
+      "hash_status": "ok"
+    }
+  ],
+  "comparison": {
+    "has_previous_snapshot": true,
+    "added": [],
+    "modified": [],
+    "removed": []
+  },
+  "warnings": []
+}
