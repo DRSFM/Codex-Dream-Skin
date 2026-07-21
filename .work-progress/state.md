@@ -1,49 +1,42 @@
 # Current state
 
-- Project: Anyrouter Dream Skin 多实例实验
+- Project: Codex Dream Skin 图形启动器
 - Mode: code
-- Last updated: 2026-07-21T10:01:11+08:00
-- Overall status: complete
+- Last updated: 2026-07-21T13:08:00+08:00
+- Overall status: review
 
 ## Current focus
-实验、旧安装副本同步和本地 Git 整理已完成。anyrouter 当前使用独立 profile、9336、state/custom/log 和 injector 运行；默认 9335 与 muyuanpub 基线保持不变。
+启动器实现、实机安全验收和本地提交已完成；默认账号登录环境未被启动器操作，当前等待用户对发布版视觉做最终确认。
 
 ## Verified progress
-- 当前改动前 Git 基线为 `39e4748 feat(windows): add themes and custom backgrounds`，工作区此前干净。
-- 当前 Windows 回归测试已在基线提交前通过。
-- 2026-07-21 01:40 基线：9335 监听 PID 72796，browser ID 与全局 state 一致；PID 72796 无显式 profile。
-- `muyuanpub` 独立根进程 PID 65900，user-data-dir 为 `C:\Users\SFM\.apicodex-desktop\muyuanpub`，没有占用 9335。
-- 当前注入器 PID 38360；全局 state SHA-256 为 `FC1DFB55A63135837E581EF565AAA3707ADC333D3FB4059EAE656850CCCBBBDA`。
-- 当前背景 SHA-256 为 `45EAFFAE3A3ADBE39406C854EFCB4D41ED1631CCE8B54EC62FEE8F55A4F8C3D9`，模式 `full-window`，主题 `crystal-clear`。
-- 实验前 9336 空闲，且 `C:\Users\SFM\.apicodex-desktop\anyrouter` 不存在；启动前终端没有 `APICODEX_API_KEY`。
-- 实例隔离代码已实现并通过 Windows 回归测试、PowerShell/Node 语法和 9335 profile 归属实机只读验证。
-- anyrouter 外观已复制到 `%LOCALAPPDATA%\CodexDreamSkin\instances\anyrouter\custom`，图片哈希与当前背景一致。
-- anyrouter 主页和任务页 verify 均通过；独立 restore 后默认实例与 muyuanpub 未变化，随后已重新启动 anyrouter。
-- 最终 anyrouter 根 PID 64028、injector PID 73732；9335/9336 均为 loopback；敏感扫描无命中。
-- Windows 回归测试、Node/PowerShell 语法、默认/anyrouter 实机 verify 和 apicodex 16 项认证测试全部通过。
-- 已将验证过的 `apiagent.py` 同步到 `C:\tools`；安装副本与源码 SHA-256 均为 `708FA7E07B95A7A1F53A8AE59B58F91C05E1E66A61BE3584034B3BD333A2ABDB`。
-- 旧安装副本保存在 `C:\tools\apiagent.py.backup-20260721-095857`；安装副本编译和 `apicodex --api-help` 通过，未启动或重启 Desktop。
-- apicodex 改动已提交为 `8c3fc96 feat(codex): delegate desktop launch to Dream Skin`。
+- 用户参考图已检查，目标为 Windows 三栏实例管理器：账号/实例导航、状态列表、实例详情和外观维护。
+- 用户要求通用逻辑，不预设或硬编码具体 API 上游名称；视觉为干净、现代、克制的微粉色。
+- 当前机器有 .NET SDK 9.0.201、WindowsDesktop 8/9、PowerShell 7.6.3、Python 3.13.1、Node 24.18.0 和 npm 11.16.0。
+- 现有 Dream Skin 已支持实例级 state/log/custom、profile 归属、独立 CDP、启动、验证和恢复。
+- apicodex 已提供 schema v1 非敏感 `--api-list --json`，启动器通过安全的 profile ID 委托添加、编辑、移除和 Desktop 启动。
+- WPF 启动器已发布为 `windows/launcher/release/CodexDreamSkin.Launcher.exe`，自包含 win-x64，动态实例列表和微粉色三栏 UI 已通过 UI Automation。
+- 批量状态使用一次性 Windows PowerShell 进程/监听快照，实机状态查询约 6 秒且结果准确；避免 PowerShell 7 CIM 线程耗尽导致超时。
+- Windows 回归、Node 检查、WPF 4 项测试、apicodex Python 23 项测试和发布构建均通过。
+- 9335/9336 loopback PID、默认/anyrouter state injector PID、muyuanpub PID 在 GUI 只读与终端冒烟操作前后保持不变；敏感数据扫描无命中。
 
 ## Observed but unverified
-- 两个仓库的本地提交均未推送远端。
+- 用户尚未对发布版视觉截图做最终主观确认；代码侧 UI Automation 已确认无错误对话框、4 行实例、搜索、刷新和操作按钮状态。
 
 ## Blockers and open questions
-- 无阻塞项。远端推送不在本次范围内。
+- 无代码阻塞项。两个仓库已分别本地提交，均未推送；apicodex 提交为 `56ab400`。
 
 ## Relevant artifacts
-- `docs/APICODEX-ANYROUTER-HANDOFF.md` - 安全边界和实验验收标准。
-- `windows/scripts/start-dream-skin.ps1` - Windows 启动和注入入口。
-- `windows/scripts/common-windows.ps1` - 进程、端口和 Store 包公共逻辑。
-- `windows/scripts/copy-dream-skin-instance-appearance.ps1` - 仅复制实例外观资源。
-- `D:\codex项目\apiclaude-codex\apiagent.py` - apicodex 可选 Dream Skin 委托入口。
-- `%LOCALAPPDATA%\CodexDreamSkin\state.json` - 当前单实例皮肤状态，只读基线来源。
+- `windows/scripts/start-dream-skin.ps1` - 已验证的实例启动入口。
+- `windows/scripts/restore-dream-skin.ps1` - 已验证的实例停止和恢复入口。
+- `windows/scripts/verify-dream-skin.ps1` - 已验证的实例检查入口。
+- `windows/scripts/common-windows.ps1` - 进程、端口和 profile 归属安全逻辑。
+- `D:\codex项目\apiclaude-codex\apiagent.py` - profile 元数据和安全认证入口。
+- `C:\Users\SFM\AppData\Local\Temp\codex-clipboard-73ffcc60-6e6f-497d-a4df-6a0527eed0cb.png` - 用户提供的界面参考。
 
 ## Failed approaches
-- `powershell -NoProfile -File windows\tests\run-tests.ps1` 被本机执行策略拦截；改用 `pwsh -NoProfile` 后测试通过。
-- PATH 中旧 `C:\tools\apicodex.bat` 未加载源码改动，只启动了无 CDP 的 anyrouter；改用源码入口后成功。
-- 完全 detached 的 Dream Skin 委托吞掉启动错误；改为同步等待启动验证并返回真实退出码。
-- PowerShell 7 将 state ISO 时间解析为 `DateTime`，导致 injector 启动时间误判；读取时规范化 UTC ISO 后修复，并清理了 anyrouter 孤立 watcher。
+- 发布脚本参数默认值在 PowerShell 参数绑定阶段使用 `$PSScriptRoot`，导致空路径；已改为脚本体内解析。
+- PowerShell 7 批量重复 CIM/NetTCP 查询在实机偶发超时；已改为 Windows PowerShell 单次 WMI + netstat 快照并复用。
+- Windows PowerShell 5 无 BOM 解析根图片工具的中文 here-string 失败；已改为普通字符串数组并给脚本加 UTF-8 BOM，Windows 回归恢复通过。
 
 ## Next action
-保持两个仓库不推送，等待用户决定是否进入远端同步或下一轮 anyrouter 实验。
+用户可运行 `windows/launcher/release/CodexDreamSkin.Launcher.exe` 做最终视觉确认；后续只需在确认后决定是否推送现有本地提交。

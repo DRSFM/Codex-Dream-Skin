@@ -4,6 +4,8 @@
 
 ### 新功能
 
+- 新增 Windows 原生 Codex Dream Skin Launcher，以三栏图形界面动态管理默认账号和任意 apicodex API profile 的状态、端口、背景、主题、显示模式与维护操作。
+- 新增批量只读实例状态和通用实例外观接口；启动器配置仅保存非敏感端口/UI 数据，并可发布为自包含 Windows 可执行程序。
 - Windows 皮肤现在支持实例级 state、日志、外观目录、CDP 端口和 `user-data-dir` 归属，可与 apicodex 的多个 API Desktop profile 并行运行。
 - 非默认实例的启动、验证和恢复会校验官方可执行文件、loopback 端口和祖先进程 profile；恢复不会修改默认 Codex 配置，也不会误停其他 profile。
 - 新增 anyrouter 外观复制入口，只复制受管理的背景图片、显示模式和主题 ID，不读取 Desktop 登录数据。
@@ -18,6 +20,8 @@
 
 ### 修复
 
+- 图形启动器的批量状态刷新改为一次性进程与监听快照，避免多个实例重复触发 CIM/NetTCP 查询而超时或错误显示为已停止。
+- 根目录图片工具补充 UTF-8 BOM，Windows PowerShell 5 可正确解析中文提示文本。
 - 渲染层现在只在检测到完整 Codex 主界面壳层时启用皮肤；宠物等透明辅助窗口会主动清理主题背景与装饰节点，避免出现遮挡宠物的矩形背景框。
 - 安装与 `-RestoreBaseTheme` 现在严格按 UTF-8 读取，保留原换行风格，并以无 BOM、同目录原子替换方式写回 `config.toml`，避免中文项目名称乱码或导致 Codex 无法启动。
 - 遇到带 BOM/无 BOM 的 UTF-16、NUL 字符、无效 UTF-8 或写入期间被其他程序改动的配置时停止修改，不再静默转码或覆盖较新的内容。

@@ -33,6 +33,8 @@
 | 非默认实例状态 / 日志 | `%LOCALAPPDATA%\CodexDreamSkin\instances\<id>` |
 | 默认实例主题 / 自定义图 | `%LOCALAPPDATA%\CodexDreamSkin\custom` |
 | 非默认实例主题 / 自定义图 | `%LOCALAPPDATA%\CodexDreamSkin\instances\<id>\custom` |
+| 图形启动器设置 | `%LOCALAPPDATA%\CodexDreamSkin\launcher\settings.json`（仅刷新间隔和实例端口） |
+| 图形启动器源码 / 发布物 | `windows\launcher\` / `windows\launcher\release\` |
 | 图片显示模式 | `%LOCALAPPDATA%\CodexDreamSkin\custom\image-mode.txt`（`full-window` / `home-card`） |
 | Codex 配置 | `%USERPROFILE%\.codex\config.toml` |
 | 默认 CDP 端口 | 首选 `9335`，冲突时自动选空闲口（Mac 包默认从 `9341` 起） |
@@ -50,6 +52,7 @@
 | 官方签名校验 | ✅ | Store 签名类型 + 包身份 |
 | 客户部署提示词 | ✅ | ❌（可用 Mac 文案改写） |
 | 打客户 ZIP | ✅ `build-client-release.sh` | 手动压缩 `windows/` |
+| 多实例图形启动器 | ❌ | ✅ WPF，自包含 `win-x64` |
 
 Windows API Desktop profile 由 apicodex 管理 `CODEX_HOME`、keyring 和 Desktop 数据目录；皮肤只接收实例标识、CDP 端口与 `--user-data-dir`，不安装或恢复默认 `C:\Users\<user>\.codex\config.toml`。
 

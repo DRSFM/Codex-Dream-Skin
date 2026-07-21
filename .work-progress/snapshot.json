@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "captured_at": "2026-07-21T10:02:45.1022815+08:00",
+  "captured_at": "2026-07-21T13:23:23.9914264+08:00",
   "root": "E:\\新版codex工作区\\codex皮肤",
   "watch_paths": [
     "."
@@ -9,32 +9,40 @@
     "available": true,
     "is_repository": true,
     "branch": "main",
-    "head": "39e47489c50b601fd91d7e58220c3678a25976c5",
+    "head": "273c2d4dd185d3a005669fc8c5f5a579a0182e6a",
     "status": [
+      " M .gitignore",
+      " M .work-progress/config.json",
+      " M .work-progress/log.md",
+      " M .work-progress/plan.md",
+      " M .work-progress/snapshot.json",
+      " M .work-progress/state.md",
       " M README.md",
-      " M docs/APICODEX-ANYROUTER-HANDOFF.md",
+      " M customize-dream-skin-image.ps1",
       " M docs/platforms.md",
       " M windows/CHANGELOG.md",
       " M windows/SKILL.md",
-      " M windows/scripts/common-windows.ps1",
-      " M windows/scripts/injector.mjs",
-      " M windows/scripts/install-dream-skin.ps1",
       " M windows/scripts/restore-dream-skin.ps1",
       " M windows/scripts/start-dream-skin.ps1",
       " M windows/scripts/verify-dream-skin.ps1",
       " M windows/tests/run-tests.ps1",
-      "?? .work-progress/",
-      "?? windows/scripts/copy-dream-skin-instance-appearance.ps1"
+      "?? windows/launcher/",
+      "?? windows/scripts/get-dream-skin-instance-status.ps1",
+      "?? windows/scripts/get-dream-skin-launcher-status.ps1",
+      "?? windows/scripts/set-dream-skin-instance-appearance.ps1"
     ],
     "changed_paths": [
+      ".gitignore",
+      ".work-progress/config.json",
+      ".work-progress/log.md",
+      ".work-progress/plan.md",
+      ".work-progress/snapshot.json",
+      ".work-progress/state.md",
       "README.md",
-      "docs/APICODEX-ANYROUTER-HANDOFF.md",
+      "customize-dream-skin-image.ps1",
       "docs/platforms.md",
       "windows/CHANGELOG.md",
       "windows/SKILL.md",
-      "windows/scripts/common-windows.ps1",
-      "windows/scripts/injector.mjs",
-      "windows/scripts/install-dream-skin.ps1",
       "windows/scripts/restore-dream-skin.ps1",
       "windows/scripts/start-dream-skin.ps1",
       "windows/scripts/verify-dream-skin.ps1",
@@ -42,19 +50,22 @@
     ],
     "staged_paths": [],
     "diff_stat": [
-      " README.md                              |   2 +",
-      " docs/APICODEX-ANYROUTER-HANDOFF.md     |   8 ++",
-      " docs/platforms.md                      |   8 +-",
-      " windows/CHANGELOG.md                   |   4 +",
-      " windows/SKILL.md                       |   4 +",
-      " windows/scripts/common-windows.ps1     | 217 +++++++++++++++++++++++++++++----",
-      " windows/scripts/injector.mjs           |  11 +-",
-      " windows/scripts/install-dream-skin.ps1 |   5 +",
-      " windows/scripts/restore-dream-skin.ps1 |  51 ++++++--",
-      " windows/scripts/start-dream-skin.ps1   | 119 ++++++++++++------",
-      " windows/scripts/verify-dream-skin.ps1  |  41 ++++++-",
-      " windows/tests/run-tests.ps1            |  39 +++++-",
-      " 12 files changed, 424 insertions(+), 85 deletions(-)"
+      " .gitignore                             |    3 +",
+      " .work-progress/config.json             |    6 +-",
+      " .work-progress/log.md                  |   21 +",
+      " .work-progress/plan.md                 |   37 +-",
+      " .work-progress/snapshot.json           | 1232 ++++++++++++++++++++++++++++++--",
+      " .work-progress/state.md                |   57 +-",
+      " README.md                              |    2 +",
+      " customize-dream-skin-image.ps1         |   16 +-",
+      " docs/platforms.md                      |    3 +",
+      " windows/CHANGELOG.md                   |    4 +",
+      " windows/SKILL.md                       |    3 +",
+      " windows/scripts/restore-dream-skin.ps1 |    3 +-",
+      " windows/scripts/start-dream-skin.ps1   |    5 +-",
+      " windows/scripts/verify-dream-skin.ps1  |    3 +-",
+      " windows/tests/run-tests.ps1            |   48 ++",
+      " 15 files changed, 1323 insertions(+), 120 deletions(-)"
     ]
   },
   "files": [
@@ -88,9 +99,9 @@
     },
     {
       "path": ".gitignore",
-      "length": 147,
-      "last_write_utc": "2026-07-16T14:15:36.8979216Z",
-      "sha256": "a2232806c04f82d131d978c783fadb134a1500ed3219c6afafb21525f5a53d02",
+      "length": 223,
+      "last_write_utc": "2026-07-21T04:12:29.0305066Z",
+      "sha256": "efa9938dc06d14a81b391d87d17469eb1a7b82d403f7749d28215d3c92ea4409",
       "hash_status": "ok"
     },
     {
@@ -102,9 +113,9 @@
     },
     {
       "path": "customize-dream-skin-image.ps1",
-      "length": 5304,
-      "last_write_utc": "2026-07-20T13:50:16.9025787Z",
-      "sha256": "d3ad230428ca85ae359b3f03b4c9e21bc30b29622684aa7b15d5784e94bc396c",
+      "length": 5367,
+      "last_write_utc": "2026-07-21T04:53:33.6990301Z",
+      "sha256": "77aff7e613a79e6f10340b889d15ca58ad605d87200f068fc1b0903db0761c43",
       "hash_status": "ok"
     },
     {
@@ -235,9 +246,9 @@
     },
     {
       "path": "docs/platforms.md",
-      "length": 2389,
-      "last_write_utc": "2026-07-20T18:45:55.9313442Z",
-      "sha256": "5f6427f95cb2c14602160b542e0af23b723dd9ad94031e2320611796f028e8cb",
+      "length": 2664,
+      "last_write_utc": "2026-07-21T05:12:26.8525292Z",
+      "sha256": "c3ccc41677df4aa499a7ccdcc6f3bcd6e8268b52a0157ade49eb206d3bb45975",
       "hash_status": "ok"
     },
     {
@@ -599,9 +610,9 @@
     },
     {
       "path": "README.md",
-      "length": 4784,
-      "last_write_utc": "2026-07-20T18:45:55.9313442Z",
-      "sha256": "f625e787ed9c9bd8fb9889a8cd6427701348d885aadf50446454fb0f3597cdc4",
+      "length": 5043,
+      "last_write_utc": "2026-07-21T04:12:29.0337140Z",
+      "sha256": "9914415f10035c1e8a6155c54563b78584997ddd6bb1581d0ee36a3b3511ffd6",
       "hash_status": "ok"
     },
     {
@@ -641,9 +652,191 @@
     },
     {
       "path": "windows/CHANGELOG.md",
-      "length": 7487,
-      "last_write_utc": "2026-07-20T18:45:55.9337024Z",
-      "sha256": "dac2a4434cb97f187a4718bb3da8648e80d8eadd146213f2c345fbff2487af45",
+      "length": 8113,
+      "last_write_utc": "2026-07-21T05:12:44.1428508Z",
+      "sha256": "cd8acf2be035d184ba02d7c22e4ec4ea8ba810559bf282487bb08f29b74498eb",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/launcher/build-launcher-release.ps1",
+      "length": 1940,
+      "last_write_utc": "2026-07-21T04:19:58.6673495Z",
+      "sha256": "1f60b57f4f33055bd48b95086acc3ee6b3b9387fddb6aa370b386002c4157996",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/launcher/CodexDreamSkin.Launcher.Tests/CodexDreamSkin.Launcher.Tests.csproj",
+      "length": 841,
+      "last_write_utc": "2026-07-21T04:12:29.0315163Z",
+      "sha256": "0e53f1378c5267af455ecdfd371df5e3e73c0847f6850ac7236c158f4e6aed23",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/launcher/CodexDreamSkin.Launcher.Tests/LauncherContractTests.cs",
+      "length": 3801,
+      "last_write_utc": "2026-07-21T04:29:56.6938957Z",
+      "sha256": "ea44b6c627de9fc97e2be28f87dd5c0464141a85282af4af785fb06cfc9e4d1b",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/launcher/CodexDreamSkin.Launcher/App.xaml",
+      "length": 383,
+      "last_write_utc": "2026-07-21T03:04:18.2254355Z",
+      "sha256": "d0becccbef0943d61621ec93eaf287d34ea374780a21b5b846090962c6733628",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/launcher/CodexDreamSkin.Launcher/App.xaml.cs",
+      "length": 102,
+      "last_write_utc": "2026-07-21T03:04:18.2254355Z",
+      "sha256": "8add11f6f44cbe02ab3b38b8b8b086ca47a20dfd14956435a448c7eb3d532a4a",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/launcher/CodexDreamSkin.Launcher/Assets/fallback-background.png",
+      "length": 2612553,
+      "last_write_utc": "2026-07-16T12:35:05.9006309Z",
+      "sha256": "e6019a268915194e270d9ad4eb44d99c1a43c22c11463137147d9e00428375fc",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/launcher/CodexDreamSkin.Launcher/Assets/launcher.ico",
+      "length": 2686,
+      "last_write_utc": "2026-07-21T02:59:27.6779994Z",
+      "sha256": "61bac94c5f06043166da1a025118587848fe70a60ec79f131d249095ed091faf",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/launcher/CodexDreamSkin.Launcher/CodexDreamSkin.Launcher.csproj",
+      "length": 776,
+      "last_write_utc": "2026-07-21T02:58:38.6188792Z",
+      "sha256": "dfef1e00e278d0df0fe1451814c687650c6a294f6c43deca293d53dd8f135835",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/launcher/CodexDreamSkin.Launcher/GlobalUsings.cs",
+      "length": 180,
+      "last_write_utc": "2026-07-21T03:12:34.8514756Z",
+      "sha256": "1722fce7429bf6a97267a9630d97326c94eb1eb1a16667d8c9d7884ac983e398",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/launcher/CodexDreamSkin.Launcher/Infrastructure/Converters.cs",
+      "length": 3635,
+      "last_write_utc": "2026-07-21T03:47:39.7605270Z",
+      "sha256": "5d13dc7a58e86bf686023f958dd1738b875992facfa0b95b2d89c3e8e182d2b2",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/launcher/CodexDreamSkin.Launcher/Infrastructure/ObservableObject.cs",
+      "length": 776,
+      "last_write_utc": "2026-07-21T03:04:18.2264414Z",
+      "sha256": "a3fc190b328e7f970b0618de3b8c0a5c8d72e9992324730b9ef784ef2acfe23e",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/launcher/CodexDreamSkin.Launcher/MainWindow.xaml",
+      "length": 44189,
+      "last_write_utc": "2026-07-21T04:16:34.3589129Z",
+      "sha256": "82c5503629400409ea3518248e99561a621efa9369d2bfac9ac8b56f520ee9f8",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/launcher/CodexDreamSkin.Launcher/MainWindow.xaml.cs",
+      "length": 10678,
+      "last_write_utc": "2026-07-21T03:11:24.6751023Z",
+      "sha256": "d4c807c8b42514ed93c0bf22653ad3d7e72b37c0f69478bf0e64adbc5a47e784",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/launcher/CodexDreamSkin.Launcher/Models/ApiProfileModels.cs",
+      "length": 1006,
+      "last_write_utc": "2026-07-21T03:04:18.2374539Z",
+      "sha256": "959c698933904e235befe69ad89003f42467a1386cd44dd48e5abc69b0651f88",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/launcher/CodexDreamSkin.Launcher/Models/DreamSkinModels.cs",
+      "length": 3332,
+      "last_write_utc": "2026-07-21T04:04:35.6260832Z",
+      "sha256": "0393aa2e532caebf523e34ac7e464742973cea00017b15bdd4417c3fa3c2b8ed",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/launcher/CodexDreamSkin.Launcher/Models/LauncherSettings.cs",
+      "length": 422,
+      "last_write_utc": "2026-07-21T03:04:18.2384641Z",
+      "sha256": "b1e395eeb93b1bd9e5319871ffbe1db7fb2b9a32a1580abe9aa4cae0fbd53dc1",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/launcher/CodexDreamSkin.Launcher/Services/ApiCodexService.cs",
+      "length": 6383,
+      "last_write_utc": "2026-07-21T03:21:39.6141855Z",
+      "sha256": "faef41d438a74d9f429e7ee2fe5a1f401441eadc4cded84cd4b336a1ff956f16",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/launcher/CodexDreamSkin.Launcher/Services/DreamSkinService.cs",
+      "length": 10131,
+      "last_write_utc": "2026-07-21T04:04:35.6260832Z",
+      "sha256": "7761b1e5ad242227763145ad5aceba28cfbe7ab9830863f72520e228ba60aaa2",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/launcher/CodexDreamSkin.Launcher/Services/LauncherSettingsStore.cs",
+      "length": 3204,
+      "last_write_utc": "2026-07-21T03:04:18.2406902Z",
+      "sha256": "e9e9c4bab17150e3debd2efe1846a1c2dcb0d34bf19ed510f4860ccc73851cb0",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/launcher/CodexDreamSkin.Launcher/Services/ProcessRunner.cs",
+      "length": 3741,
+      "last_write_utc": "2026-07-21T03:04:18.2384641Z",
+      "sha256": "7aee5b80426c369210bd9eecb649f88b7d933404de377bec9d73d4f9c1c356ef",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/launcher/CodexDreamSkin.Launcher/Services/RepositoryLocator.cs",
+      "length": 1161,
+      "last_write_utc": "2026-07-21T03:04:18.2394941Z",
+      "sha256": "0d5b9aee3464921f79d5cee5aa3db546ad8422b9bb59171221266190818bdaa1",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/launcher/CodexDreamSkin.Launcher/Services/ThemeCatalog.cs",
+      "length": 1411,
+      "last_write_utc": "2026-07-21T03:04:18.2416928Z",
+      "sha256": "c0f096f7e865b85dc87244380fc26421d2584dc593466959a6ba38edd59490f4",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/launcher/CodexDreamSkin.Launcher/ViewModels/InstanceViewModel.cs",
+      "length": 6512,
+      "last_write_utc": "2026-07-21T04:07:06.6827354Z",
+      "sha256": "7dc09c09ea03b31bd01b60d6d9a74493289aa6012e63c8321e20b420c6b2bb3d",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/launcher/CodexDreamSkin.Launcher/ViewModels/MainViewModel.cs",
+      "length": 15577,
+      "last_write_utc": "2026-07-21T04:29:56.6938957Z",
+      "sha256": "4469417a31a072a84d36c891ab36f379731621237f54b8943cf705184fb2358a",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/launcher/README.md",
+      "length": 1344,
+      "last_write_utc": "2026-07-21T04:12:29.0337140Z",
+      "sha256": "3a0f5e6ad0d1d1ee8bcf4acfa592e5a5061c5b4d64851c776c05cdf364ee3544",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/launcher/start-launcher.ps1",
+      "length": 543,
+      "last_write_utc": "2026-07-21T04:12:29.0325281Z",
+      "sha256": "716b0b699bfa90db040cc2c41326ff8e665fe0fb8c320f1b0f15f7dee1eba535",
       "hash_status": "ok"
     },
     {
@@ -682,6 +875,20 @@
       "hash_status": "ok"
     },
     {
+      "path": "windows/scripts/get-dream-skin-instance-status.ps1",
+      "length": 4815,
+      "last_write_utc": "2026-07-21T03:47:39.7627532Z",
+      "sha256": "3a882969c5a90e484a7d71d0d43562a7d2fc6d0d9b2c74effb11596f90545301",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/scripts/get-dream-skin-launcher-status.ps1",
+      "length": 12242,
+      "last_write_utc": "2026-07-21T04:48:57.6428212Z",
+      "sha256": "51706bd11a32fa7bb97c4d3f75533f8df31d7d90a4f5351afaccef0e2e2ae5dc",
+      "hash_status": "ok"
+    },
+    {
       "path": "windows/scripts/injector.mjs",
       "length": 34262,
       "last_write_utc": "2026-07-20T17:50:00.0038084Z",
@@ -697,23 +904,30 @@
     },
     {
       "path": "windows/scripts/restore-dream-skin.ps1",
-      "length": 10645,
-      "last_write_utc": "2026-07-20T17:53:11.8624722Z",
-      "sha256": "c7cf0e903f1df21f9059931973ceb894be57e1678ad9824be657d173c86c41b5",
+      "length": 10525,
+      "last_write_utc": "2026-07-21T02:54:01.7107958Z",
+      "sha256": "9cdad5e45c4c8482f9a29c7eef6d4b587d38b4ac514ba3409bf51c340f8f2e3c",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/scripts/set-dream-skin-instance-appearance.ps1",
+      "length": 4866,
+      "last_write_utc": "2026-07-21T02:54:01.7079239Z",
+      "sha256": "cf7f7a922410a9bb7ec2d2421f6e9a71d199872e4d06cacf432753762a7a8cf1",
       "hash_status": "ok"
     },
     {
       "path": "windows/scripts/start-dream-skin.ps1",
-      "length": 14086,
-      "last_write_utc": "2026-07-20T17:49:30.2486772Z",
-      "sha256": "25b847b8a8edfb15ba88bda2979aaf0f73e2300d338a2bc7979af28ebbfc1cf6",
+      "length": 14110,
+      "last_write_utc": "2026-07-21T02:54:01.7100922Z",
+      "sha256": "20a593fdee445f2853b4375e3804932074ef5474b409a81f08bc19525b504f06",
       "hash_status": "ok"
     },
     {
       "path": "windows/scripts/verify-dream-skin.ps1",
-      "length": 3315,
-      "last_write_utc": "2026-07-20T17:50:34.2418186Z",
-      "sha256": "5db1bde7dbf28ba74b05077a0a198c8781afb989e8a781e56a1c3cfd715f4600",
+      "length": 3195,
+      "last_write_utc": "2026-07-21T02:54:01.7118774Z",
+      "sha256": "f68b812d40bbf2a3bb4f9623d8bbab782dcc8ebfa0956ee80d65533fd42789d0",
       "hash_status": "ok"
     },
     {
@@ -760,9 +974,9 @@
     },
     {
       "path": "windows/SKILL.md",
-      "length": 5903,
-      "last_write_utc": "2026-07-20T18:45:55.9326944Z",
-      "sha256": "e0b08c6537c336c31f4c5c27f8b28bbaa16dd93d15004f09741cd6df22f4c910",
+      "length": 6601,
+      "last_write_utc": "2026-07-21T05:12:26.8514980Z",
+      "sha256": "fb6024b6991ec9f6b7b04a85e1d216326df813cf6663bcd4f5037c69540889ab",
       "hash_status": "ok"
     },
     {
@@ -774,9 +988,9 @@
     },
     {
       "path": "windows/tests/run-tests.ps1",
-      "length": 25619,
-      "last_write_utc": "2026-07-20T18:41:47.6996538Z",
-      "sha256": "7303613b205032ccba17cd045277cf2e199a454f8898a6cf8c767f98def6e927",
+      "length": 28330,
+      "last_write_utc": "2026-07-21T04:14:34.3890120Z",
+      "sha256": "c0c91f66ec2767d83a2678f602f97fc50ba645b565bc6beedf843a2bcbf8eedb",
       "hash_status": "ok"
     },
     {

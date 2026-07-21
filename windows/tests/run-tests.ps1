@@ -409,6 +409,44 @@ try {
     if ($instancePayload.presentation -cne 'home-card') {
       throw 'Injector did not load appearance from the isolated instance custom root.'
     }
+
+    $appearanceScript = Join-Path $Root 'scripts\set-dream-skin-instance-appearance.ps1'
+    $appearance = & $appearanceScript -InstanceId launcher-test `
+      -ImagePath (Join-Path $Root 'assets\dream-reference.png') -Mode full-window `
+      -ThemeId crystal-clear | ConvertFrom-Json
+    if ($appearance.instanceId -cne 'launcher-test' -or -not $appearance.hasCustomImage -or
+      $appearance.mode -cne 'full-window' -or $appearance.themeId -cne 'crystal-clear') {
+      throw 'Instance appearance setter did not persist the requested image, mode and theme.'
+    }
+    $launcherCustomRoot = Join-Path $testLocalAppData 'CodexDreamSkin\instances\launcher-test\custom'
+    if (-not (Test-DreamSkinPathEqual -Left $appearance.customRoot -Right $launcherCustomRoot)) {
+      throw 'Instance appearance setter wrote outside the requested instance root.'
+    }
+    $clearedAppearance = & $appearanceScript -InstanceId launcher-test -ClearImage `
+      -Mode home-card | ConvertFrom-Json
+    if ($clearedAppearance.hasCustomImage -or $clearedAppearance.mode -cne 'home-card' -or
+      @(Get-ChildItem -LiteralPath $launcherCustomRoot -File -Filter 'custom-image.*').Count -ne 0) {
+      throw 'Instance appearance setter did not clear only the managed custom image.'
+    }
+    $unsafeAppearanceRejected = $false
+    try {
+      & $appearanceScript -InstanceId '..\default' -Mode full-window *> $null
+    } catch { $unsafeAppearanceRejected = $true }
+    if (-not $unsafeAppearanceRejected) { throw 'Instance appearance setter accepted an unsafe instance ID.' }
+
+    $statusScript = Join-Path $Root 'scripts\get-dream-skin-instance-status.ps1'
+    $missingProfileRejected = $false
+    try {
+      & $statusScript -InstanceId launcher-test -Port 9340 *> $null
+    } catch { $missingProfileRejected = $true }
+    if (-not $missingProfileRejected) { throw 'Non-default status query accepted a missing profile path.' }
+
+    $batchStatusScript = Join-Path $Root 'scripts\get-dream-skin-launcher-status.ps1'
+    $batchPathRejected = $false
+    try {
+      & $batchStatusScript -RequestPath (Join-Path $temporaryRoot 'outside-batch-request.json') *> $null
+    } catch { $batchPathRejected = $true }
+    if (-not $batchPathRejected) { throw 'Batch status query accepted a request file outside its temp root.' }
   } finally {
     $env:LOCALAPPDATA = $previousLocalAppData
   }
@@ -416,6 +454,16 @@ try {
   $rendererSource = Get-Content -LiteralPath (Join-Path $Root 'assets\renderer-inject.js') -Raw
   $skinCss = Get-Content -LiteralPath (Join-Path $Root 'assets\dream-skin.css') -Raw
   $injectorSource = Get-Content -LiteralPath (Join-Path $Root 'scripts\injector.mjs') -Raw
+  foreach ($profileScopedScript in @(
+    'start-dream-skin.ps1',
+    'restore-dream-skin.ps1',
+    'verify-dream-skin.ps1'
+  )) {
+    $profileScopedSource = Get-Content -LiteralPath (Join-Path $Root "scripts\$profileScopedScript") -Raw
+    if (-not $profileScopedSource.Contains('$MatchProfile = $true')) {
+      throw "$profileScopedScript does not force profile matching for the default instance."
+    }
+  }
   foreach ($adaptiveContract in @(
     'dream-art-full-window',
     'dream-art-home-card',

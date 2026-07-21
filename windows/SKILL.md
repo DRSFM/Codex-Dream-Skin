@@ -18,6 +18,8 @@ Apply a reversible renderer skin through Chromium DevTools Protocol while launch
 
 For an isolated API Desktop profile, do not run the default installer. Copy appearance with `scripts\copy-dream-skin-instance-appearance.ps1`, then let the profile launcher call `scripts\start-dream-skin.ps1 -InstanceId <id> -Port <loopback-port> -ProfilePath <desktop-data-dir>`. Restore with the same `-InstanceId`; non-default restore never edits the default Codex config.
 
+For a graphical multi-instance workflow, run `launcher\start-launcher.ps1` during development or build the self-contained release with `launcher\build-launcher-release.ps1`. The release is `launcher\release\CodexDreamSkin.Launcher.exe` plus its copied `windows\` runtime directory. The launcher reads only the non-sensitive result of `apicodex --api-list --json`, protects the default account from profile management, and routes start, stop, verify, restore, port, background, theme, and display-mode operations through the instance-scoped scripts.
+
 ## Guardrails
 
 - Preserve the official executable, package signature, user threads, pets, plugins, and authentication state.
@@ -34,6 +36,7 @@ For an isolated API Desktop profile, do not run the default installer. Copy appe
 - Loopback prevents LAN exposure, but Chromium CDP has no same-user authentication. Run only trusted local software while the skin is active, and use restore to close the debug session when it is no longer needed.
 - Preserve `config.toml` as strict UTF-8. Never use encoding-dependent whole-file PowerShell reads/writes, silently transcode UTF-16, or overwrite a file that changed after it was read. Ambiguous TOML shapes must fail before writing rather than receive a best-effort rewrite.
 - Keep install/start/restore/verify serialized with the per-user operation lock in `common-windows.ps1`.
+- Treat `launcher\release` as a portable directory: keep the executable beside its `windows\scripts`, `windows\assets`, and `windows\themes` folders.
 
 ## Checks
 

@@ -41,8 +41,9 @@ try {
   if (-not $ProfileExplicit -and $null -ne $previousState -and $previousState.profilePath) {
     $ProfilePath = [System.IO.Path]::GetFullPath("$($previousState.profilePath)")
   }
-  $MatchProfile = [bool]($ProfileExplicit -or $InstanceId -cne 'default' -or
-    ($null -ne $previousState -and @($previousState.PSObject.Properties.Name) -contains 'profilePath'))
+  # Every instance is profile-scoped. The default instance matches only Codex processes
+  # without an explicit user-data-dir, so API Desktop processes are never restarted with it.
+  $MatchProfile = $true
   if ($null -ne $previousState -and $previousState.profilePath -and
     -not (Test-DreamSkinPathEqual -Left "$($previousState.profilePath)" -Right $ProfilePath)) {
     throw 'The requested profile does not match the saved Dream Skin instance state.'

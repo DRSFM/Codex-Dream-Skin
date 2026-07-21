@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <ApplicationIcon>Assets\launcher.ico</ApplicationIcon>
+    <AssemblyName>CodexDreamSkin.Launcher</AssemblyName>
+    <RootNamespace>CodexDreamSkin.Launcher</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MahApps.Metro.IconPacks.Lucide" Version="6.2.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\launcher.ico" />
+    <Content Include="Assets\fallback-background.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+</Project>

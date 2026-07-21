@@ -9,3 +9,6 @@ docs/readme-preview.html
 release/
 runtime/
 windows/shortcuts/*.lnk
+windows/launcher/**/bin/
+windows/launcher/**/obj/
+windows/launcher/release/

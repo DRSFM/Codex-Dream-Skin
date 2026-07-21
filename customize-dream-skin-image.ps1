@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
   [string]$ImagePath,
   [ValidateSet('full-window', 'home-card')]
@@ -34,13 +34,13 @@ function Select-DreamSkinImage {
 
 function Select-DreamSkinImageMode {
   Add-Type -AssemblyName System.Windows.Forms
-  $message = @'
-请选择图片的显示方式：
-
-“是”    = 整窗背景（推荐）
-“否”    = 只插入主页图片卡片（保留原有效果）
-“取消”  = 不更改
-'@
+  $message = @(
+    '请选择图片的显示方式：'
+    ''
+    '“是”    = 整窗背景（推荐）'
+    '“否”    = 只插入主页图片卡片（保留原有效果）'
+    '“取消”  = 不更改'
+  ) -join [Environment]::NewLine
   $result = [System.Windows.Forms.MessageBox]::Show(
     $message,
     'Codex Dream Skin 图片显示方式',

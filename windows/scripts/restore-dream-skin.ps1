@@ -39,8 +39,7 @@ try {
   } else {
     $null
   }
-  $MatchProfile = [bool]($InstanceId -cne 'default' -or
-    ($null -ne $state -and @($state.PSObject.Properties.Name) -contains 'profilePath'))
+  $MatchProfile = $true
   if (-not $PortExplicit -and $null -ne $state -and $state.port) {
     $Port = [int]$state.port
     Assert-DreamSkinPort -Port $Port

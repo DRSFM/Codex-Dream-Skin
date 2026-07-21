@@ -27,8 +27,7 @@ try {
   } else {
     $null
   }
-  $MatchProfile = [bool]($InstanceId -cne 'default' -or
-    ($null -ne $state -and @($state.PSObject.Properties.Name) -contains 'profilePath'))
+  $MatchProfile = $true
   $CustomRoot = if ($null -ne $state -and $state.customRoot) {
     [System.IO.Path]::GetFullPath("$($state.customRoot)")
   } else {
