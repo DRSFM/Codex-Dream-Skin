@@ -12,6 +12,7 @@ $ErrorActionPreference = 'Stop'
 $PortExplicit = $PSBoundParameters.ContainsKey('Port')
 $ProfileExplicit = $PSBoundParameters.ContainsKey('ProfilePath')
 $Injector = Join-Path $PSScriptRoot 'injector.mjs'
+$StartupVerifyTimeoutMs = 60000
 . (Join-Path $PSScriptRoot 'common-windows.ps1')
 
 $operationLock = Enter-DreamSkinOperationLock
@@ -245,7 +246,7 @@ try {
     $savedAuthentication = Suspend-DreamSkinAuthenticationEnvironment
     try {
       $verifyOutput = @(& $node.Path $Injector --verify --port $Port --browser-id $cdpIdentity.BrowserId `
-        --custom-root $CustomRoot --timeout-ms 30000 2>&1)
+        --custom-root $CustomRoot --timeout-ms $StartupVerifyTimeoutMs 2>&1)
       $verifyExitCode = $LASTEXITCODE
     } finally {
       Restore-DreamSkinAuthenticationEnvironment -Saved $savedAuthentication

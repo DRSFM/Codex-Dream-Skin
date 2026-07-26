@@ -454,6 +454,11 @@ try {
   $rendererSource = Get-Content -LiteralPath (Join-Path $Root 'assets\renderer-inject.js') -Raw
   $skinCss = Get-Content -LiteralPath (Join-Path $Root 'assets\dream-skin.css') -Raw
   $injectorSource = Get-Content -LiteralPath (Join-Path $Root 'scripts\injector.mjs') -Raw
+  $startSource = Get-Content -LiteralPath (Join-Path $Root 'scripts\start-dream-skin.ps1') -Raw
+  if (-not $startSource.Contains('$StartupVerifyTimeoutMs = 60000') -or
+    -not $startSource.Contains('--timeout-ms $StartupVerifyTimeoutMs')) {
+    throw 'Startup verification must allow the current Codex renderer at least 60 seconds to mount.'
+  }
   foreach ($profileScopedScript in @(
     'start-dream-skin.ps1',
     'restore-dream-skin.ps1',
@@ -463,6 +468,23 @@ try {
     if (-not $profileScopedSource.Contains('$MatchProfile = $true')) {
       throw "$profileScopedScript does not force profile matching for the default instance."
     }
+  }
+  $stopSource = Get-Content -LiteralPath (Join-Path $Root 'scripts\stop-codex-instance.ps1') -Raw
+  foreach ($stopContract in @(
+    'Get-DreamSkinCodexProcesses -Codex $codex -ProfilePath $ProfilePath -MatchProfile',
+    'Stop-DreamSkinCodex -Codex $codex -ProfilePath $ProfilePath -MatchProfile',
+    "A non-default stop requires an explicit -ProfilePath."
+  )) {
+    if (-not $stopSource.Contains($stopContract)) {
+      throw "Precise Desktop stop is missing contract: $stopContract"
+    }
+  }
+  $missingStopProfileRejected = $false
+  try {
+    & (Join-Path $Root 'scripts\stop-codex-instance.ps1') -InstanceId 'api-test' -Port 9340 *> $null
+  } catch { $missingStopProfileRejected = $true }
+  if (-not $missingStopProfileRejected) {
+    throw 'Precise Desktop stop accepted a non-default instance without a profile path.'
   }
   foreach ($adaptiveContract in @(
     'dream-art-full-window',

@@ -14,6 +14,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly DreamSkinService dreamSkin;
     private readonly LauncherSettingsStore settingsStore;
     private readonly ThemeCatalog themeCatalog;
+    private readonly DesktopWindowService desktopWindows;
     private readonly SemaphoreSlim refreshGate = new(1, 1);
     private LauncherSettings settings = new();
     private IReadOnlyDictionary<string, string> themeNames = new Dictionary<string, string>();
@@ -23,7 +24,7 @@ public sealed class MainViewModel : ObservableObject
     private string lastRefreshText = "尚未刷新";
     private bool isRefreshing;
 
-    public MainViewModel()
+    public MainViewModel(DesktopWindowService? desktopWindows = null)
     {
         var repositoryRoot = RepositoryLocator.FindRoot();
         var runner = new ProcessRunner();
@@ -31,6 +32,7 @@ public sealed class MainViewModel : ObservableObject
         dreamSkin = new DreamSkinService(runner, apiCodex, repositoryRoot);
         settingsStore = new LauncherSettingsStore();
         themeCatalog = new ThemeCatalog(repositoryRoot);
+        this.desktopWindows = desktopWindows ?? new DesktopWindowService();
         FilteredInstances = CollectionViewSource.GetDefaultView(Instances);
         FilteredInstances.Filter = FilterInstance;
     }
@@ -88,6 +90,8 @@ public sealed class MainViewModel : ObservableObject
     public string ApiCodexPath => apiCodex.LauncherPath;
 
     public string SettingsPath => settingsStore.SettingsPath;
+
+    public event EventHandler? InstanceStatesChanged;
 
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
@@ -188,6 +192,7 @@ public sealed class MainViewModel : ObservableObject
                 else
                 {
                     instance.ApplyStatus(item.Status, themeNames);
+                    desktopWindows.LabelInstanceWindows(instance);
                 }
             }
             LastRefreshText = DateTime.Now.ToString("HH:mm:ss");
@@ -198,6 +203,7 @@ public sealed class MainViewModel : ObservableObject
             IsRefreshing = false;
             refreshGate.Release();
             RaiseSummaryProperties();
+            InstanceStatesChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 
@@ -211,7 +217,12 @@ public sealed class MainViewModel : ObservableObject
     public Task StopAsync(InstanceViewModel instance, CancellationToken cancellationToken = default) =>
         RunOperationAsync(
             instance,
-            () => dreamSkin.StopAsync(instance.InstanceId, instance.Port, cancellationToken),
+            () => dreamSkin.StopAsync(
+                instance.InstanceId,
+                instance.Port,
+                instance.ProfilePath,
+                instance.HasManagedState,
+                cancellationToken),
             "实例已停止",
             cancellationToken);
 
@@ -273,6 +284,8 @@ public sealed class MainViewModel : ObservableObject
     }
 
     public void OpenLogs(InstanceViewModel instance) => dreamSkin.OpenLogs(instance.StatePath);
+
+    public bool FocusDesktop(InstanceViewModel instance) => desktopWindows.FocusInstanceWindow(instance);
 
     public async Task ChangePortAsync(
         InstanceViewModel instance,
@@ -351,6 +364,8 @@ public sealed class MainViewModel : ObservableObject
                 instance.ProfilePath,
                 cancellationToken);
             instance.ApplyStatus(status, themeNames);
+            desktopWindows.LabelInstanceWindows(instance);
+            InstanceStatesChanged?.Invoke(this, EventArgs.Empty);
         }
         catch (Exception exception)
         {

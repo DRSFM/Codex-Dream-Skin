@@ -32,3 +32,11 @@ Prefer `type(scope): summary`, for example `fix(windows): preserve UTF-8 config 
 ## Security & Release Notes
 
 CDP must remain loopback-only. Never modify official `.app`, WindowsApps, `app.asar`, signatures, API keys, or Base URLs. Update `macos/CHANGELOG.md` for user-visible macOS changes and bump `macos/VERSION` for release-worthy work. Maintain a clearly labeled Windows changelog as parity features and fixes ship.
+
+## Agent Collaboration Notes
+
+### 2026-07-26: ApiCodex unified tray integration
+
+- Change: Kept the existing WPF Dream Skin launcher as the visual control surface and added a single-instance system tray, exact PID-based window naming/focus, background lifecycle, and profile-scoped stop support for Desktop instances without Dream Skin state.
+- Reason: Multiple official Desktop processes otherwise look identical and are cumbersome to manage, while stop/focus actions must remain isolated to the intended account or API Profile.
+- Safety: The launcher still reads no credentials and does not modify the Store package, `app.asar`, signatures, conversations, or unrelated ChatGPT processes.

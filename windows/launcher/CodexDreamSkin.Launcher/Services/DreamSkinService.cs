@@ -169,13 +169,26 @@ public sealed partial class DreamSkinService
     public async Task StopAsync(
         string instanceId,
         int port,
+        string? profilePath,
+        bool hasManagedState,
         CancellationToken cancellationToken = default)
     {
-        ValidateInstanceId(instanceId);
-        var result = await RunScriptAsync(
-            "restore-dream-skin.ps1",
-            ["-InstanceId", instanceId, "-Port", port.ToString(), "-ForceRestart", "-NoRelaunch"],
-            cancellationToken);
+        ValidateInstance(instanceId, port, profilePath);
+        var scriptName = hasManagedState ? "restore-dream-skin.ps1" : "stop-codex-instance.ps1";
+        var arguments = new List<string> { "-InstanceId", instanceId, "-Port", port.ToString() };
+        if (hasManagedState)
+        {
+            arguments.AddRange(["-ForceRestart", "-NoRelaunch"]);
+        }
+        else
+        {
+            if (!string.IsNullOrWhiteSpace(profilePath))
+            {
+                arguments.AddRange(["-ProfilePath", profilePath]);
+            }
+            arguments.Add("-AllowForce");
+        }
+        var result = await RunScriptAsync(scriptName, arguments, cancellationToken);
         EnsureSuccess(result, "停止实例");
     }
 

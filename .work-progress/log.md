@@ -78,3 +78,22 @@
 - Verified: 皮肤仓库提交信息为 `feat(windows): add multi-instance desktop launcher`，apicodex 提交为 `56ab400`；两个仓库均未推送。
 - Verified: 发布物 `windows/launcher/release/CodexDreamSkin.Launcher.exe` 保留；9335/9336 仍为 loopback，PID 72796/64028 未变化。
 - Status changes: 项目保持 `review`，剩余事项仅为用户对发布版视觉的最终确认。
+
+## 2026-07-26T11:17:00+08:00 — unified tray integration started
+
+- Trigger: 用户要求将 ApiCodex 与现有皮肤启动器直接整合，完成统一托盘并保留全部皮肤能力。
+- Observed: WPF 启动器已动态管理默认账号和 API Profile，状态合同已包含精确 `desktopProcessIds` 和 `profilePath`；尚无 NotifyIcon、窗口聚焦或标题服务。
+- Observed: 仓库 `main` 领先远端 3 个提交，并有 4 个未提交的慢启动兼容文件；本任务保留并叠加实现。
+- Status changes: T107 新增为 `ready`，T108-T109 新增为 `pending`；项目 `review` → `active`。
+- Decisions: WPF 启动器作为唯一可视化/托盘控制面；ApiCodex 继续拥有 Profile、凭据和 Desktop 启动；不在启动器中读取任何密钥。
+- Next: 实现并测试精确的 Desktop 主窗口服务。
+
+## 2026-07-26T11:38:00+08:00 — unified tray integration implemented and verified
+
+- Implemented: 新增精确 PID 驱动的窗口标题/聚焦服务、动态 NotifyIcon 托盘、单实例唤回、关闭隐藏生命周期，以及无皮肤 state Desktop 的 profile 精确停止脚本；保留全部三栏皮肤功能和慢启动兼容改动。
+- Verified: WPF 6 项、Windows/Node 回归、11 个 PowerShell 脚本解析、ApiCodex 全套 80 项、py_compile/pyflakes 与两仓库 `git diff --check` 通过；自包含 win-x64 release 重建成功。
+- Verified: 实机将 anyrouter/prism/muyuanpub/wuming 标记为 Profile 标题，账号仍为 `ChatGPT`；关闭面板后 PID 54728 保持，第二次启动只唤回原管理器；没有停止或重启任何 ChatGPT。
+- Status changes: T107-T109 → done；项目 active → review，等待用户查看实际托盘菜单。
+- Decisions: 托盘退出仅退出管理器；有 Dream Skin state 的停止继续完整 restore，无 state 时只按官方 exe 和精确 profile 停止；不读取凭据、不修改 Store 包或会话。
+- Failures: 首次启用 WinForms 后出现 WPF 类型名歧义，关闭主项目隐式 using 并保留显式别名后解决；一次混合文档补丁因 changelog 标题不匹配未应用，拆分后完成；最终发布重建因验收管理器锁定 exe 首次失败，仅退出该管理器后重建并以 PID 55592 重新启动，5 个 ChatGPT 实例未变化。
+- Next: 用户视觉确认当前发布版；如需版本检查点，再分别提交两个仓库且不自动推送。

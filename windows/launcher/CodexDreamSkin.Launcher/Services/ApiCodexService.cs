@@ -53,7 +53,10 @@ public sealed partial class ApiCodexService
             ["APICODEX_DREAM_SKIN_PORT"] = port.ToString(),
         };
         var result = await RunCapturedAsync(
-            ["--desktop", "--api-profile", profile.Id], environment, cancellationToken);
+            ["--desktop", "--api-profile", profile.Id],
+            environment,
+            cancellationToken,
+            TimeSpan.FromMinutes(4));
         EnsureSuccess(result, $"启动 {profile.Name}");
     }
 
@@ -75,10 +78,16 @@ public sealed partial class ApiCodexService
     private Task<ProcessResult> RunCapturedAsync(
         IReadOnlyList<string> arguments,
         IReadOnlyDictionary<string, string>? environment,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        TimeSpan? timeout = null)
     {
         var invocation = BuildInvocation(arguments, keepOpen: false);
-        return runner.RunAsync(invocation.FileName, invocation.Arguments, environment, cancellationToken: cancellationToken);
+        return runner.RunAsync(
+            invocation.FileName,
+            invocation.Arguments,
+            environment,
+            timeout,
+            cancellationToken);
     }
 
     private Task RunInteractiveAsync(IReadOnlyList<string> arguments, CancellationToken cancellationToken)

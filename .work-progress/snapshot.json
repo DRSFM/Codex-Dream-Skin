@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "captured_at": "2026-07-21T13:23:23.9914264+08:00",
+  "captured_at": "2026-07-26T11:41:36.9866571+08:00",
   "root": "E:\\新版codex工作区\\codex皮肤",
   "watch_paths": [
     "."
@@ -9,63 +9,74 @@
     "available": true,
     "is_repository": true,
     "branch": "main",
-    "head": "273c2d4dd185d3a005669fc8c5f5a579a0182e6a",
+    "head": "c861c7e54c40742921267d02b57e06d9a7d8afd4",
     "status": [
-      " M .gitignore",
-      " M .work-progress/config.json",
       " M .work-progress/log.md",
       " M .work-progress/plan.md",
-      " M .work-progress/snapshot.json",
       " M .work-progress/state.md",
+      " M AGENTS.md",
       " M README.md",
-      " M customize-dream-skin-image.ps1",
-      " M docs/platforms.md",
       " M windows/CHANGELOG.md",
-      " M windows/SKILL.md",
-      " M windows/scripts/restore-dream-skin.ps1",
+      " M windows/launcher/CodexDreamSkin.Launcher.Tests/LauncherContractTests.cs",
+      " M windows/launcher/CodexDreamSkin.Launcher/App.xaml",
+      " M windows/launcher/CodexDreamSkin.Launcher/App.xaml.cs",
+      " M windows/launcher/CodexDreamSkin.Launcher/CodexDreamSkin.Launcher.csproj",
+      " M windows/launcher/CodexDreamSkin.Launcher/GlobalUsings.cs",
+      " M windows/launcher/CodexDreamSkin.Launcher/MainWindow.xaml.cs",
+      " M windows/launcher/CodexDreamSkin.Launcher/Services/ApiCodexService.cs",
+      " M windows/launcher/CodexDreamSkin.Launcher/Services/DreamSkinService.cs",
+      " M windows/launcher/CodexDreamSkin.Launcher/ViewModels/InstanceViewModel.cs",
+      " M windows/launcher/CodexDreamSkin.Launcher/ViewModels/MainViewModel.cs",
+      " M windows/launcher/README.md",
       " M windows/scripts/start-dream-skin.ps1",
-      " M windows/scripts/verify-dream-skin.ps1",
       " M windows/tests/run-tests.ps1",
-      "?? windows/launcher/",
-      "?? windows/scripts/get-dream-skin-instance-status.ps1",
-      "?? windows/scripts/get-dream-skin-launcher-status.ps1",
-      "?? windows/scripts/set-dream-skin-instance-appearance.ps1"
+      "?? windows/launcher/CodexDreamSkin.Launcher/Services/DesktopWindowService.cs",
+      "?? windows/launcher/CodexDreamSkin.Launcher/Services/TrayIconController.cs",
+      "?? windows/scripts/stop-codex-instance.ps1"
     ],
     "changed_paths": [
-      ".gitignore",
-      ".work-progress/config.json",
       ".work-progress/log.md",
       ".work-progress/plan.md",
-      ".work-progress/snapshot.json",
       ".work-progress/state.md",
+      "AGENTS.md",
       "README.md",
-      "customize-dream-skin-image.ps1",
-      "docs/platforms.md",
       "windows/CHANGELOG.md",
-      "windows/SKILL.md",
-      "windows/scripts/restore-dream-skin.ps1",
+      "windows/launcher/CodexDreamSkin.Launcher.Tests/LauncherContractTests.cs",
+      "windows/launcher/CodexDreamSkin.Launcher/App.xaml",
+      "windows/launcher/CodexDreamSkin.Launcher/App.xaml.cs",
+      "windows/launcher/CodexDreamSkin.Launcher/CodexDreamSkin.Launcher.csproj",
+      "windows/launcher/CodexDreamSkin.Launcher/GlobalUsings.cs",
+      "windows/launcher/CodexDreamSkin.Launcher/MainWindow.xaml.cs",
+      "windows/launcher/CodexDreamSkin.Launcher/Services/ApiCodexService.cs",
+      "windows/launcher/CodexDreamSkin.Launcher/Services/DreamSkinService.cs",
+      "windows/launcher/CodexDreamSkin.Launcher/ViewModels/InstanceViewModel.cs",
+      "windows/launcher/CodexDreamSkin.Launcher/ViewModels/MainViewModel.cs",
+      "windows/launcher/README.md",
       "windows/scripts/start-dream-skin.ps1",
-      "windows/scripts/verify-dream-skin.ps1",
       "windows/tests/run-tests.ps1"
     ],
     "staged_paths": [],
     "diff_stat": [
-      " .gitignore                             |    3 +",
-      " .work-progress/config.json             |    6 +-",
-      " .work-progress/log.md                  |   21 +",
-      " .work-progress/plan.md                 |   37 +-",
-      " .work-progress/snapshot.json           | 1232 ++++++++++++++++++++++++++++++--",
-      " .work-progress/state.md                |   57 +-",
-      " README.md                              |    2 +",
-      " customize-dream-skin-image.ps1         |   16 +-",
-      " docs/platforms.md                      |    3 +",
-      " windows/CHANGELOG.md                   |    4 +",
-      " windows/SKILL.md                       |    3 +",
-      " windows/scripts/restore-dream-skin.ps1 |    3 +-",
-      " windows/scripts/start-dream-skin.ps1   |    5 +-",
-      " windows/scripts/verify-dream-skin.ps1  |    3 +-",
-      " windows/tests/run-tests.ps1            |   48 ++",
-      " 15 files changed, 1323 insertions(+), 120 deletions(-)"
+      " .work-progress/log.md                              |  19 ++++",
+      " .work-progress/plan.md                             |   5 +-",
+      " .work-progress/state.md                            |  17 +++-",
+      " AGENTS.md                                          |   8 ++",
+      " README.md                                          |   2 +-",
+      " windows/CHANGELOG.md                               |   3 +",
+      " .../LauncherContractTests.cs                       |  83 ++++++++++++++++",
+      " windows/launcher/CodexDreamSkin.Launcher/App.xaml  |   2 +-",
+      " .../launcher/CodexDreamSkin.Launcher/App.xaml.cs   | 104 ++++++++++++++++++++-",
+      " .../CodexDreamSkin.Launcher.csproj                 |   3 +-",
+      " .../CodexDreamSkin.Launcher/GlobalUsings.cs        |   2 +",
+      " .../CodexDreamSkin.Launcher/MainWindow.xaml.cs     |  87 ++++++++++++++++-",
+      " .../Services/ApiCodexService.cs                    |  15 ++-",
+      " .../Services/DreamSkinService.cs                   |  23 ++++-",
+      " .../ViewModels/InstanceViewModel.cs                |  21 +++++",
+      " .../ViewModels/MainViewModel.cs                    |  19 +++-",
+      " windows/launcher/README.md                         |   6 ++",
+      " windows/scripts/start-dream-skin.ps1               |   3 +-",
+      " windows/tests/run-tests.ps1                        |  22 +++++",
+      " 19 files changed, 423 insertions(+), 21 deletions(-)"
     ]
   },
   "files": [
@@ -106,9 +117,9 @@
     },
     {
       "path": "AGENTS.md",
-      "length": 2865,
-      "last_write_utc": "2026-07-16T12:35:05.8129857Z",
-      "sha256": "6977d8c2d5d7948f73d672ab8f0fffb6b3fdf103d568578ae2b3ca634d631aad",
+      "length": 3555,
+      "last_write_utc": "2026-07-26T03:32:53.0262916Z",
+      "sha256": "fcdd4b380c51c3c339d6705fcb4b0fd67d2ed5b34b362ae9f3f0077c3021b100",
       "hash_status": "ok"
     },
     {
@@ -610,9 +621,9 @@
     },
     {
       "path": "README.md",
-      "length": 5043,
-      "last_write_utc": "2026-07-21T04:12:29.0337140Z",
-      "sha256": "9914415f10035c1e8a6155c54563b78584997ddd6bb1581d0ee36a3b3511ffd6",
+      "length": 5241,
+      "last_write_utc": "2026-07-26T03:32:53.0252859Z",
+      "sha256": "2c8e0acee9c95505313730bb2086c99e52a95c3366964d7d6eaec6d7b22a9ecf",
       "hash_status": "ok"
     },
     {
@@ -652,9 +663,9 @@
     },
     {
       "path": "windows/CHANGELOG.md",
-      "length": 8113,
-      "last_write_utc": "2026-07-21T05:12:44.1428508Z",
-      "sha256": "cd8acf2be035d184ba02d7c22e4ec4ea8ba810559bf282487bb08f29b74498eb",
+      "length": 8742,
+      "last_write_utc": "2026-07-26T03:32:53.0252859Z",
+      "sha256": "4c1d8d8f12d16c2fd84b4b875a1ef1efd855353ba1b7935b57726234e336f240",
       "hash_status": "ok"
     },
     {
@@ -673,23 +684,23 @@
     },
     {
       "path": "windows/launcher/CodexDreamSkin.Launcher.Tests/LauncherContractTests.cs",
-      "length": 3801,
-      "last_write_utc": "2026-07-21T04:29:56.6938957Z",
-      "sha256": "ea44b6c627de9fc97e2be28f87dd5c0464141a85282af4af785fb06cfc9e4d1b",
+      "length": 6747,
+      "last_write_utc": "2026-07-26T03:28:01.7127529Z",
+      "sha256": "7ecfafe6441ef76de49a70d9f1bf15d02f77cf7b7b28ef12f22e3241ca418158",
       "hash_status": "ok"
     },
     {
       "path": "windows/launcher/CodexDreamSkin.Launcher/App.xaml",
-      "length": 383,
-      "last_write_utc": "2026-07-21T03:04:18.2254355Z",
-      "sha256": "d0becccbef0943d61621ec93eaf287d34ea374780a21b5b846090962c6733628",
+      "length": 388,
+      "last_write_utc": "2026-07-26T03:27:11.1050202Z",
+      "sha256": "345283c26f5a11a59255aa3574c9d8b7dd8241866327c8da471ebdcac82fbaf9",
       "hash_status": "ok"
     },
     {
       "path": "windows/launcher/CodexDreamSkin.Launcher/App.xaml.cs",
-      "length": 102,
-      "last_write_utc": "2026-07-21T03:04:18.2254355Z",
-      "sha256": "8add11f6f44cbe02ab3b38b8b8b086ca47a20dfd14956435a448c7eb3d532a4a",
+      "length": 3057,
+      "last_write_utc": "2026-07-26T03:32:30.7972434Z",
+      "sha256": "523634fb53fcce113fcad1ebf130fcc4658aa183a4c73cf4271f1cecc8ab9d9c",
       "hash_status": "ok"
     },
     {
@@ -708,16 +719,16 @@
     },
     {
       "path": "windows/launcher/CodexDreamSkin.Launcher/CodexDreamSkin.Launcher.csproj",
-      "length": 776,
-      "last_write_utc": "2026-07-21T02:58:38.6188792Z",
-      "sha256": "dfef1e00e278d0df0fe1451814c687650c6a294f6c43deca293d53dd8f135835",
+      "length": 821,
+      "last_write_utc": "2026-07-26T03:29:23.3103349Z",
+      "sha256": "4d4b4a652ace1598943b9f5288acd5ef8a4be5560935c626c03ef4798600bfe1",
       "hash_status": "ok"
     },
     {
       "path": "windows/launcher/CodexDreamSkin.Launcher/GlobalUsings.cs",
-      "length": 180,
-      "last_write_utc": "2026-07-21T03:12:34.8514756Z",
-      "sha256": "1722fce7429bf6a97267a9630d97326c94eb1eb1a16667d8c9d7884ac983e398",
+      "length": 288,
+      "last_write_utc": "2026-07-26T03:29:02.5240404Z",
+      "sha256": "55d1fb7aa8762d58faf458dcfad7a3b95479643ba459c46420f870a5f0bc7eeb",
       "hash_status": "ok"
     },
     {
@@ -743,9 +754,9 @@
     },
     {
       "path": "windows/launcher/CodexDreamSkin.Launcher/MainWindow.xaml.cs",
-      "length": 10678,
-      "last_write_utc": "2026-07-21T03:11:24.6751023Z",
-      "sha256": "d4c807c8b42514ed93c0bf22653ad3d7e72b37c0f69478bf0e64adbc5a47e784",
+      "length": 13302,
+      "last_write_utc": "2026-07-26T03:27:38.2804859Z",
+      "sha256": "0a9a28f18a90bf0cf684cd47314cea9b5a0fd1e29c0e7335878978323e8916e4",
       "hash_status": "ok"
     },
     {
@@ -771,16 +782,23 @@
     },
     {
       "path": "windows/launcher/CodexDreamSkin.Launcher/Services/ApiCodexService.cs",
-      "length": 6383,
-      "last_write_utc": "2026-07-21T03:21:39.6141855Z",
-      "sha256": "faef41d438a74d9f429e7ee2fe5a1f401441eadc4cded84cd4b336a1ff956f16",
+      "length": 6529,
+      "last_write_utc": "2026-07-21T16:12:43.0566135Z",
+      "sha256": "3222b5bb4c410ae313a22875dfd39f911c7d248798e37bc5dc3fd03f2caee671",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/launcher/CodexDreamSkin.Launcher/Services/DesktopWindowService.cs",
+      "length": 5644,
+      "last_write_utc": "2026-07-26T03:29:23.3118414Z",
+      "sha256": "8668a91333cb988f9487365669500da09bff070f41a5262d8444b4d88faa100f",
       "hash_status": "ok"
     },
     {
       "path": "windows/launcher/CodexDreamSkin.Launcher/Services/DreamSkinService.cs",
-      "length": 10131,
-      "last_write_utc": "2026-07-21T04:04:35.6260832Z",
-      "sha256": "7761b1e5ad242227763145ad5aceba28cfbe7ab9830863f72520e228ba60aaa2",
+      "length": 10617,
+      "last_write_utc": "2026-07-26T03:25:56.6375487Z",
+      "sha256": "77036aad3bfa0cfe0aed03d8e7a31270ce2c111659cd0c64439685d7698bcba3",
       "hash_status": "ok"
     },
     {
@@ -812,24 +830,31 @@
       "hash_status": "ok"
     },
     {
+      "path": "windows/launcher/CodexDreamSkin.Launcher/Services/TrayIconController.cs",
+      "length": 5309,
+      "last_write_utc": "2026-07-26T03:30:21.7436798Z",
+      "sha256": "b47a787ebc5a28547007eaaf6afdfbde72bf76c8ec35759d08102d6b65982584",
+      "hash_status": "ok"
+    },
+    {
       "path": "windows/launcher/CodexDreamSkin.Launcher/ViewModels/InstanceViewModel.cs",
-      "length": 6512,
-      "last_write_utc": "2026-07-21T04:07:06.6827354Z",
-      "sha256": "7dc09c09ea03b31bd01b60d6d9a74493289aa6012e63c8321e20b420c6b2bb3d",
+      "length": 7208,
+      "last_write_utc": "2026-07-26T03:25:56.6270530Z",
+      "sha256": "9fa2ea5a3e42b8a8947f4f6afc62e36290e5aa8f026f8533b6dbefb55b79cb84",
       "hash_status": "ok"
     },
     {
       "path": "windows/launcher/CodexDreamSkin.Launcher/ViewModels/MainViewModel.cs",
-      "length": 15577,
-      "last_write_utc": "2026-07-21T04:29:56.6938957Z",
-      "sha256": "4469417a31a072a84d36c891ab36f379731621237f54b8943cf705184fb2358a",
+      "length": 16303,
+      "last_write_utc": "2026-07-26T03:25:56.6375487Z",
+      "sha256": "0f91639ef9175178ee75d42e4b655dfdbacb7342dd7ffffd788b4268e691dc3d",
       "hash_status": "ok"
     },
     {
       "path": "windows/launcher/README.md",
-      "length": 1344,
-      "last_write_utc": "2026-07-21T04:12:29.0337140Z",
-      "sha256": "3a0f5e6ad0d1d1ee8bcf4acfa592e5a5061c5b4d64851c776c05cdf364ee3544",
+      "length": 2033,
+      "last_write_utc": "2026-07-26T03:32:53.0243343Z",
+      "sha256": "5e1bebf95ef3b3c3f07f07976e552760423c2c6bb0b8cfcf6647768804ec6a0e",
       "hash_status": "ok"
     },
     {
@@ -918,9 +943,16 @@
     },
     {
       "path": "windows/scripts/start-dream-skin.ps1",
-      "length": 14110,
-      "last_write_utc": "2026-07-21T02:54:01.7100922Z",
-      "sha256": "20a593fdee445f2853b4375e3804932074ef5474b409a81f08bc19525b504f06",
+      "length": 14160,
+      "last_write_utc": "2026-07-21T16:12:43.0554432Z",
+      "sha256": "faf126ca0a3795771abed38ac42f188921c81d95bc07585788ccd272c423ec74",
+      "hash_status": "ok"
+    },
+    {
+      "path": "windows/scripts/stop-codex-instance.ps1",
+      "length": 1062,
+      "last_write_utc": "2026-07-26T03:32:30.7962402Z",
+      "sha256": "c2cc78d06852f73ab6218e5822db4a969a4fe51d565c1d10642521097252febf",
       "hash_status": "ok"
     },
     {
@@ -988,9 +1020,9 @@
     },
     {
       "path": "windows/tests/run-tests.ps1",
-      "length": 28330,
-      "last_write_utc": "2026-07-21T04:14:34.3890120Z",
-      "sha256": "c0c91f66ec2767d83a2678f602f97fc50ba645b565bc6beedf843a2bcbf8eedb",
+      "length": 29508,
+      "last_write_utc": "2026-07-26T03:30:12.3650277Z",
+      "sha256": "db5038ea925b26cc40cf0945d7ec1a22757dc4c39928823c170f1a777fab352d",
       "hash_status": "ok"
     },
     {
@@ -1052,8 +1084,29 @@
   ],
   "comparison": {
     "has_previous_snapshot": true,
-    "added": [],
-    "modified": [],
+    "added": [
+      "windows/launcher/CodexDreamSkin.Launcher/Services/DesktopWindowService.cs",
+      "windows/launcher/CodexDreamSkin.Launcher/Services/TrayIconController.cs",
+      "windows/scripts/stop-codex-instance.ps1"
+    ],
+    "modified": [
+      "AGENTS.md",
+      "README.md",
+      "windows/CHANGELOG.md",
+      "windows/launcher/CodexDreamSkin.Launcher.Tests/LauncherContractTests.cs",
+      "windows/launcher/CodexDreamSkin.Launcher/App.xaml",
+      "windows/launcher/CodexDreamSkin.Launcher/App.xaml.cs",
+      "windows/launcher/CodexDreamSkin.Launcher/CodexDreamSkin.Launcher.csproj",
+      "windows/launcher/CodexDreamSkin.Launcher/GlobalUsings.cs",
+      "windows/launcher/CodexDreamSkin.Launcher/MainWindow.xaml.cs",
+      "windows/launcher/CodexDreamSkin.Launcher/Services/ApiCodexService.cs",
+      "windows/launcher/CodexDreamSkin.Launcher/Services/DreamSkinService.cs",
+      "windows/launcher/CodexDreamSkin.Launcher/ViewModels/InstanceViewModel.cs",
+      "windows/launcher/CodexDreamSkin.Launcher/ViewModels/MainViewModel.cs",
+      "windows/launcher/README.md",
+      "windows/scripts/start-dream-skin.ps1",
+      "windows/tests/run-tests.ps1"
+    ],
     "removed": []
   },
   "warnings": []

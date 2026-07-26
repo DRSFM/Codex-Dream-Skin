@@ -1,6 +1,8 @@
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
+using CodexDreamSkin.Launcher.Services;
 using CodexDreamSkin.Launcher.ViewModels;
 using Microsoft.Win32;
 
@@ -10,14 +12,17 @@ public partial class MainWindow : Window
 {
     private readonly MainViewModel viewModel = new();
     private readonly CancellationTokenSource lifetime = new();
+    private readonly TrayIconController tray;
     private DispatcherTimer? refreshTimer;
 
     public MainWindow()
     {
         InitializeComponent();
         DataContext = viewModel;
+        tray = new TrayIconController(this, viewModel);
         Loaded += MainWindow_Loaded;
-        Closed += (_, _) => lifetime.Cancel();
+        Closing += MainWindow_Closing;
+        Closed += MainWindow_Closed;
     }
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -37,6 +42,66 @@ public partial class MainWindow : Window
 
     private async void RefreshStatus_Click(object sender, RoutedEventArgs e) =>
         await RunUiActionAsync(() => viewModel.RefreshStatusesAsync(lifetime.Token));
+
+    public void ShowManager()
+    {
+        if (!Dispatcher.CheckAccess())
+        {
+            _ = Dispatcher.BeginInvoke(ShowManager);
+            return;
+        }
+        Show();
+        ShowInTaskbar = true;
+        if (WindowState == WindowState.Minimized)
+        {
+            WindowState = WindowState.Normal;
+        }
+        Activate();
+    }
+
+    internal Task RefreshFromTrayAsync() =>
+        RunUiActionAsync(() => viewModel.RefreshStatusesAsync(lifetime.Token));
+
+    internal Task StartFromTrayAsync(InstanceViewModel instance) =>
+        RunUiActionAsync(() => viewModel.StartAsync(instance, lifetime.Token));
+
+    internal async Task FocusFromTrayAsync(InstanceViewModel instance)
+    {
+        viewModel.SelectedInstance = instance;
+        if (viewModel.FocusDesktop(instance))
+        {
+            return;
+        }
+        await viewModel.RefreshStatusesAsync(lifetime.Token);
+        if (!viewModel.FocusDesktop(instance))
+        {
+            throw new InvalidOperationException($"未找到“{instance.DesktopTitle}”的可聚焦主窗口。");
+        }
+    }
+
+    internal async Task StopFromTrayAsync(InstanceViewModel instance)
+    {
+        if (MessageBox.Show(
+                $"停止“{instance.DesktopTitle}”？不会影响其他实例。",
+                "停止实例",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question) == MessageBoxResult.Yes)
+        {
+            await viewModel.StopAsync(instance, lifetime.Token);
+        }
+    }
+
+    internal async Task RestartFromTrayAsync(InstanceViewModel instance)
+    {
+        if (MessageBox.Show(
+                $"重启“{instance.DesktopTitle}”并应用当前皮肤设置？",
+                "重启实例",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question) == MessageBoxResult.Yes)
+        {
+            await viewModel.StartAsync(instance, lifetime.Token);
+        }
+    }
 
     private async void AddProfile_Click(object sender, RoutedEventArgs e) =>
         await RunUiActionAsync(() => viewModel.AddProfileAsync(lifetime.Token));
@@ -242,6 +307,26 @@ public partial class MainWindow : Window
 
     private static InstanceViewModel? GetInstance(object sender) =>
         sender is FrameworkElement { Tag: InstanceViewModel instance } ? instance : null;
+
+    private void MainWindow_Closing(object? sender, CancelEventArgs e)
+    {
+        if (Application.Current is App { ExitRequested: true })
+        {
+            return;
+        }
+        e.Cancel = true;
+        ShowInTaskbar = false;
+        Hide();
+        tray.ShowBackgroundNotice();
+    }
+
+    private void MainWindow_Closed(object? sender, EventArgs e)
+    {
+        refreshTimer?.Stop();
+        lifetime.Cancel();
+        tray.Dispose();
+        lifetime.Dispose();
+    }
 
     private async Task RunUiActionAsync(Func<Task> action, bool showError = true)
     {

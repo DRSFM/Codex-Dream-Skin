@@ -23,6 +23,8 @@ public sealed class InstanceViewModel : ObservableObject
     private string lastError = "";
     private bool isBusy;
     private int port;
+    private IReadOnlyList<int> desktopProcessIds = [];
+    private bool hasManagedState;
 
     public InstanceViewModel(ApiProfileMetadata? profile, string instanceId, int port)
     {
@@ -43,6 +45,20 @@ public sealed class InstanceViewModel : ObservableObject
     public string BaseUrl { get; }
 
     public string? ProfilePath { get; }
+
+    public string DesktopTitle => IsDefault ? "ChatGPT" : $"ChatGPT ({Name})";
+
+    public IReadOnlyList<int> DesktopProcessIds
+    {
+        get => desktopProcessIds;
+        private set => SetProperty(ref desktopProcessIds, value);
+    }
+
+    public bool HasManagedState
+    {
+        get => hasManagedState;
+        private set => SetProperty(ref hasManagedState, value);
+    }
 
     public int Port
     {
@@ -184,6 +200,11 @@ public sealed class InstanceViewModel : ObservableObject
     {
         StatusCode = status.Status;
         DesktopRunning = status.DesktopRunning;
+        DesktopProcessIds = status.DesktopProcessIds
+            .Where(processId => processId > 0)
+            .Distinct()
+            .ToArray();
+        HasManagedState = !string.IsNullOrWhiteSpace(status.StateCreatedAt);
         SkinRunning = status.SkinRunning;
         CdpVerified = status.CdpVerified;
         OnPropertyChanged(nameof(CdpStatusText));

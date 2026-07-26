@@ -105,7 +105,7 @@ Windows 的“更换图片”入口可选择整窗背景或原有主页图片卡
 
 API Desktop 多实例实验使用 `start-dream-skin.ps1 -InstanceId <id> -Port <loopback-port> -ProfilePath <desktop-data-dir>`；它会把状态、日志和外观资源隔离到该实例目录，不应对 API profile 运行 `install-dream-skin.ps1`。
 
-Windows 图形启动器位于 `windows/launcher/`。它动态读取本地 apicodex profile，以三栏界面分别控制实例启动、停止、验证、恢复和独立外观；启动器不读取或保存 API Key、Cookie、`auth.json` 或 keyring 内容。
+Windows 图形启动器位于 `windows/launcher/`。它动态读取本地 apicodex profile，以三栏界面和统一系统托盘分别控制实例启动、聚焦、停止、重启、验证、恢复和独立外观。账号实例显示为 `ChatGPT`，API 实例显示为 `ChatGPT (Profile名)`；关闭管理面板只隐藏到托盘，退出管理器也不会关闭 ChatGPT。启动器不读取或保存 API Key、Cookie、`auth.json` 或 keyring 内容。
 
 更细的说明：
 

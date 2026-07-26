@@ -85,6 +85,8 @@ public sealed class LauncherContractTests
             Image = @"C:\missing\preview.png",
             Mode = "full-window",
             ThemeId = "pink-dream",
+            DesktopProcessIds = [120, 120, -1],
+            StateCreatedAt = "2026-07-26T03:00:00Z",
         };
 
         instance.ApplyStatus(status, new Dictionary<string, string> { ["pink-dream"] = "粉系定制" });
@@ -95,6 +97,9 @@ public sealed class LauncherContractTests
         Assert.Equal("整窗背景", instance.Mode == "full-window" ? "整窗背景" : "主页卡片");
         Assert.Equal("粉系定制", instance.ThemeName);
         Assert.Null(instance.PreviewImage);
+        Assert.Equal([120], instance.DesktopProcessIds);
+        Assert.True(instance.HasManagedState);
+        Assert.Equal("ChatGPT (通用实例)", instance.DesktopTitle);
     }
 
     [Fact]
@@ -107,5 +112,83 @@ public sealed class LauncherContractTests
         var match = Assert.Single(viewModel.FilteredInstances.Cast<InstanceViewModel>());
 
         Assert.Equal("default", match.InstanceId);
+    }
+
+    [Fact]
+    public void DesktopWindowServiceLabelsOnlyVerifiedMainWindows()
+    {
+        var native = new FakeDesktopWindowNative(
+        [
+            new(1, 120, "ChatGPT", true, false, false),
+            new(2, 120, "ChatGPT", true, true, false),
+            new(3, 120, "ChatGPT", true, false, true),
+            new(4, 120, "Other window", true, false, false),
+            new(5, 999, "ChatGPT", true, false, false),
+        ]);
+        var service = new DesktopWindowService(native);
+        var profile = new ApiProfileMetadata
+        {
+            Id = "relay",
+            InstanceId = "relay",
+            Name = "通用实例",
+            DesktopData = @"C:\desktop\relay",
+        };
+        var instance = new InstanceViewModel(profile, "relay", 9340);
+        instance.ApplyStatus(new DreamSkinStatus
+        {
+            InstanceId = "relay",
+            DesktopRunning = true,
+            DesktopProcessIds = [120],
+        }, new Dictionary<string, string>());
+
+        var labeled = service.LabelInstanceWindows(instance);
+
+        Assert.Equal(1, labeled);
+        Assert.Equal((nint)1, Assert.Single(native.Titles).Handle);
+        Assert.Equal("ChatGPT (通用实例)", Assert.Single(native.Titles).Title);
+    }
+
+    [Fact]
+    public void DesktopWindowServiceFocusesOnlyVerifiedPid()
+    {
+        var native = new FakeDesktopWindowNative(
+        [
+            new(1, 999, "ChatGPT", true, false, false),
+            new(2, 120, "ChatGPT (relay)", true, false, false),
+        ]);
+        var service = new DesktopWindowService(native);
+        var instance = new InstanceViewModel(null, "default", 9335);
+        instance.ApplyStatus(new DreamSkinStatus
+        {
+            InstanceId = "default",
+            DesktopRunning = true,
+            DesktopProcessIds = [120],
+        }, new Dictionary<string, string>());
+
+        Assert.True(service.FocusInstanceWindow(instance));
+        Assert.Equal((nint)2, Assert.Single(native.Activated));
+        Assert.Equal("ChatGPT", instance.DesktopTitle);
+    }
+
+    private sealed class FakeDesktopWindowNative(
+        IReadOnlyList<DesktopWindowSnapshot> windows) : IDesktopWindowNative
+    {
+        public List<(nint Handle, string Title)> Titles { get; } = [];
+
+        public List<nint> Activated { get; } = [];
+
+        public IReadOnlyList<DesktopWindowSnapshot> EnumerateTopLevelWindows() => windows;
+
+        public bool SetTitle(nint handle, string title)
+        {
+            Titles.Add((handle, title));
+            return true;
+        }
+
+        public bool ShowAndActivate(nint handle)
+        {
+            Activated.Add(handle);
+            return true;
+        }
     }
 }

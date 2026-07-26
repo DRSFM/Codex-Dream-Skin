@@ -4,6 +4,8 @@
 
 ### 新功能
 
+- Windows 图形启动器新增 ApiCodex 统一系统托盘：按账号/Profile 展示实例，可启动、聚焦、停止或重启；管理面板关闭后驻留托盘，显式退出管理器不关闭 ChatGPT。
+- API Desktop 主窗口按已验证的 Profile PID 标记为 `ChatGPT (Profile名)`，账号窗口保持 `ChatGPT`；普通无皮肤实例也可按官方可执行文件和精确 `user-data-dir` 安全停止。
 - 新增 Windows 原生 Codex Dream Skin Launcher，以三栏图形界面动态管理默认账号和任意 apicodex API profile 的状态、端口、背景、主题、显示模式与维护操作。
 - 新增批量只读实例状态和通用实例外观接口；启动器配置仅保存非敏感端口/UI 数据，并可发布为自包含 Windows 可执行程序。
 - Windows 皮肤现在支持实例级 state、日志、外观目录、CDP 端口和 `user-data-dir` 归属，可与 apicodex 的多个 API Desktop profile 并行运行。
@@ -20,6 +22,7 @@
 
 ### 修复
 
+- 兼容新版 Store Codex 的慢速首轮启动：首次验证窗口从 30 秒提高到 60 秒，避免主路由尚未挂载时误报皮肤启动失败；图形启动器同步保留 4 分钟回滚窗口。
 - 图形启动器的批量状态刷新改为一次性进程与监听快照，避免多个实例重复触发 CIM/NetTCP 查询而超时或错误显示为已停止。
 - 根目录图片工具补充 UTF-8 BOM，Windows PowerShell 5 可正确解析中文提示文本。
 - 渲染层现在只在检测到完整 Codex 主界面壳层时启用皮肤；宠物等透明辅助窗口会主动清理主题背景与装饰节点，避免出现遮挡宠物的矩形背景框。
