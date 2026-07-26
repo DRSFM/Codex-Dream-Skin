@@ -4,7 +4,8 @@ param(
   [string]$InstanceId,
   [int]$Port = 9335,
   [string]$ProfilePath,
-  [switch]$AllowForce
+  [switch]$AllowForce,
+  [ValidateRange(1, 60)][int]$GracePeriodSeconds = 15
 )
 
 $ErrorActionPreference = 'Stop'
@@ -26,7 +27,8 @@ try {
     return
   }
 
-  Stop-DreamSkinCodex -Codex $codex -ProfilePath $ProfilePath -MatchProfile -AllowForce:$AllowForce
+  Stop-DreamSkinCodex -Codex $codex -ProfilePath $ProfilePath -MatchProfile `
+    -AllowForce:$AllowForce -GracePeriodSeconds $GracePeriodSeconds
   Write-Host "Stopped Codex Desktop instance: $InstanceId"
 } finally {
   Exit-DreamSkinOperationLock -Mutex $operationLock

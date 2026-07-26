@@ -40,3 +40,9 @@ CDP must remain loopback-only. Never modify official `.app`, WindowsApps, `app.a
 - Change: Kept the existing WPF Dream Skin launcher as the visual control surface and added a single-instance system tray, exact PID-based window naming/focus, background lifecycle, and profile-scoped stop support for Desktop instances without Dream Skin state.
 - Reason: Multiple official Desktop processes otherwise look identical and are cumbersome to manage, while stop/focus actions must remain isolated to the intended account or API Profile.
 - Safety: The launcher still reads no credentials and does not modify the Store package, `app.asar`, signatures, conversations, or unrelated ChatGPT processes.
+
+### 2026-07-26: Launcher startup and stop responsiveness
+
+- Change: Split initial profile loading from the background status scan and let launcher-confirmed stops use a 5-second graceful-exit window before the existing verified fallback termination.
+- Reason: The manager should become usable before the full WMI/CDP scan completes, and Electron child processes should not make an explicitly confirmed stop appear stuck for the full 15-second script default.
+- Safety: Standalone scripts retain the 15-second default. Forced termination still revalidates the exact Profile, registered executable path, and process identity before acting.

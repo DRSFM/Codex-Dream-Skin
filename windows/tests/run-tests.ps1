@@ -473,6 +473,7 @@ try {
   foreach ($stopContract in @(
     'Get-DreamSkinCodexProcesses -Codex $codex -ProfilePath $ProfilePath -MatchProfile',
     'Stop-DreamSkinCodex -Codex $codex -ProfilePath $ProfilePath -MatchProfile',
+    '-GracePeriodSeconds $GracePeriodSeconds',
     "A non-default stop requires an explicit -ProfilePath."
   )) {
     if (-not $stopSource.Contains($stopContract)) {
@@ -485,6 +486,31 @@ try {
   } catch { $missingStopProfileRejected = $true }
   if (-not $missingStopProfileRejected) {
     throw 'Precise Desktop stop accepted a non-default instance without a profile path.'
+  }
+  $commonSource = Get-Content -LiteralPath (Join-Path $Root 'scripts\common-windows.ps1') -Raw
+  if (-not $commonSource.Contains('[ValidateRange(1, 60)][int]$GracePeriodSeconds = 15') -or
+    -not $commonSource.Contains('AddSeconds($GracePeriodSeconds)')) {
+    throw 'Desktop stop must retain a configurable 15-second default grace period.'
+  }
+  $restoreSource = Get-Content -LiteralPath (Join-Path $Root 'scripts\restore-dream-skin.ps1') -Raw
+  if (-not $restoreSource.Contains('[ValidateRange(1, 60)][int]$StopGracePeriodSeconds = 15') -or
+    -not $restoreSource.Contains('-GracePeriodSeconds $StopGracePeriodSeconds')) {
+    throw 'Restore must forward its explicit Desktop stop grace period.'
+  }
+  $launcherServiceSource = Get-Content -LiteralPath `
+    (Join-Path $Root 'launcher\CodexDreamSkin.Launcher\Services\DreamSkinService.cs') -Raw
+  if (-not $launcherServiceSource.Contains('LauncherStopGracePeriodSeconds = 5') -or
+    -not $launcherServiceSource.Contains('"-StopGracePeriodSeconds", LauncherStopGracePeriodSeconds.ToString()') -or
+    -not $launcherServiceSource.Contains('"-GracePeriodSeconds", LauncherStopGracePeriodSeconds.ToString()')) {
+    throw 'The launcher must use the shorter grace period only through explicit stop arguments.'
+  }
+  $mainViewModelSource = Get-Content -LiteralPath `
+    (Join-Path $Root 'launcher\CodexDreamSkin.Launcher\ViewModels\MainViewModel.cs') -Raw
+  $mainWindowSource = Get-Content -LiteralPath `
+    (Join-Path $Root 'launcher\CodexDreamSkin.Launcher\MainWindow.xaml.cs') -Raw
+  if (-not $mainViewModelSource.Contains('ReloadProfilesCoreAsync(refreshStatuses: false, cancellationToken)') -or
+    -not $mainWindowSource.Contains('_ = RunUiActionAsync(')) {
+    throw 'Initial profile loading must leave the first full status scan on the background path.'
   }
   foreach ($adaptiveContract in @(
     'dream-art-full-window',

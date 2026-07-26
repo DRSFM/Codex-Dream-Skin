@@ -624,7 +624,8 @@ function Stop-DreamSkinCodex {
     [Parameter(Mandatory = $true)][object]$Codex,
     [string]$ProfilePath,
     [switch]$MatchProfile,
-    [switch]$AllowForce
+    [switch]$AllowForce,
+    [ValidateRange(1, 60)][int]$GracePeriodSeconds = 15
   )
   $processes = Get-DreamSkinCodexProcesses -Codex $Codex -ProfilePath $ProfilePath -MatchProfile:$MatchProfile
   if ($processes.Count -eq 0) { return }
@@ -632,7 +633,7 @@ function Stop-DreamSkinCodex {
     try { [void](Get-Process -Id $item.ProcessId -ErrorAction Stop).CloseMainWindow() } catch {}
   }
 
-  $deadline = (Get-Date).AddSeconds(15)
+  $deadline = (Get-Date).AddSeconds($GracePeriodSeconds)
   while ((Get-DreamSkinCodexProcesses -Codex $Codex -ProfilePath $ProfilePath `
       -MatchProfile:$MatchProfile).Count -gt 0 -and (Get-Date) -lt $deadline) {
     Start-Sleep -Milliseconds 250
@@ -640,7 +641,7 @@ function Stop-DreamSkinCodex {
   $remaining = Get-DreamSkinCodexProcesses -Codex $Codex -ProfilePath $ProfilePath -MatchProfile:$MatchProfile
   if ($remaining.Count -eq 0) { return }
   if (-not $AllowForce) {
-    throw 'Codex did not close within 15 seconds. Close it manually or explicitly authorize a forced restart.'
+    throw "Codex did not close within $GracePeriodSeconds seconds. Close it manually or explicitly authorize a forced restart."
   }
   foreach ($item in $remaining) {
     $current = Get-CimInstance Win32_Process -Filter "ProcessId = $([int]$item.ProcessId)" -ErrorAction SilentlyContinue

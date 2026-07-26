@@ -103,10 +103,15 @@ public sealed class MainViewModel : ObservableObject
             Themes.Add(theme);
         }
         themeNames = themes.ToDictionary(theme => theme.Id, theme => theme.Name, StringComparer.Ordinal);
-        await ReloadProfilesAsync(cancellationToken);
+        await ReloadProfilesCoreAsync(refreshStatuses: false, cancellationToken);
     }
 
-    public async Task ReloadProfilesAsync(CancellationToken cancellationToken = default)
+    public Task ReloadProfilesAsync(CancellationToken cancellationToken = default) =>
+        ReloadProfilesCoreAsync(refreshStatuses: true, cancellationToken);
+
+    private async Task ReloadProfilesCoreAsync(
+        bool refreshStatuses,
+        CancellationToken cancellationToken)
     {
         var previousSelection = SelectedInstance?.InstanceId;
         IsRefreshing = true;
@@ -155,8 +160,15 @@ public sealed class MainViewModel : ObservableObject
             SelectedInstance = Instances.FirstOrDefault(instance => instance.InstanceId == previousSelection)
                 ?? Instances.FirstOrDefault();
             FilteredInstances.Refresh();
-            await RefreshStatusesAsync(cancellationToken);
-            StatusMessage = $"已发现 {Instances.Count} 个实例";
+            if (refreshStatuses)
+            {
+                await RefreshStatusesAsync(cancellationToken);
+                StatusMessage = $"已发现 {Instances.Count} 个实例";
+            }
+            else
+            {
+                StatusMessage = $"已发现 {Instances.Count} 个实例，正在后台读取状态...";
+            }
         }
         finally
         {

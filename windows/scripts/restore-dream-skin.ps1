@@ -7,7 +7,8 @@ param(
   [switch]$RecoverConfigBackup,
   [switch]$PromptRestart,
   [switch]$ForceRestart,
-  [switch]$NoRelaunch
+  [switch]$NoRelaunch,
+  [ValidateRange(1, 60)][int]$StopGracePeriodSeconds = 15
 )
 
 $ErrorActionPreference = 'Stop'
@@ -124,7 +125,7 @@ try {
   try {
     if ($shouldCloseCodex) {
       Stop-DreamSkinCodex -Codex $codex -ProfilePath $ProfilePath -MatchProfile:$MatchProfile `
-        -AllowForce:$forceAuthorized
+        -AllowForce:$forceAuthorized -GracePeriodSeconds $StopGracePeriodSeconds
       if ($portOwnedByCodex -and -not (Wait-DreamSkinPortAvailable -Port $Port -TimeoutSeconds 5)) {
         throw "Port $Port is still listening after Codex closed; state was preserved for inspection."
       }

@@ -8,6 +8,8 @@ namespace CodexDreamSkin.Launcher.Services;
 
 public sealed partial class DreamSkinService
 {
+    private const int LauncherStopGracePeriodSeconds = 5;
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -178,7 +180,10 @@ public sealed partial class DreamSkinService
         var arguments = new List<string> { "-InstanceId", instanceId, "-Port", port.ToString() };
         if (hasManagedState)
         {
-            arguments.AddRange(["-ForceRestart", "-NoRelaunch"]);
+            arguments.AddRange([
+                "-ForceRestart", "-NoRelaunch",
+                "-StopGracePeriodSeconds", LauncherStopGracePeriodSeconds.ToString(),
+            ]);
         }
         else
         {
@@ -186,7 +191,10 @@ public sealed partial class DreamSkinService
             {
                 arguments.AddRange(["-ProfilePath", profilePath]);
             }
-            arguments.Add("-AllowForce");
+            arguments.AddRange([
+                "-AllowForce",
+                "-GracePeriodSeconds", LauncherStopGracePeriodSeconds.ToString(),
+            ]);
         }
         var result = await RunScriptAsync(scriptName, arguments, cancellationToken);
         EnsureSuccess(result, "停止实例");

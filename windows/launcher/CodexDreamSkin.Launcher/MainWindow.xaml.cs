@@ -35,6 +35,8 @@ public partial class MainWindow : Window
         refreshTimer.Tick += async (_, _) => await RunUiActionAsync(
             () => viewModel.RefreshStatusesAsync(lifetime.Token), showError: false);
         refreshTimer.Start();
+        _ = RunUiActionAsync(
+            () => viewModel.RefreshStatusesAsync(lifetime.Token), showError: false);
     }
 
     private async void ScanInstances_Click(object sender, RoutedEventArgs e) =>
