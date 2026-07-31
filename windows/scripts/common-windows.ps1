@@ -649,11 +649,26 @@ namespace CodexDreamSkin {
 '@
 }
 
+function Test-DreamSkinCodexIsolatedArguments {
+  param([AllowEmptyCollection()][string[]]$Arguments = @())
+  foreach ($argument in $Arguments) {
+    if ("$argument" -match '(?i)^--user-data-dir(?:=|$)') { return $true }
+  }
+  return $false
+}
+
 function Start-DreamSkinCodex {
   param(
     [Parameter(Mandatory = $true)][object]$Codex,
     [AllowEmptyCollection()][string[]]$Arguments = @()
   )
+  # AppUserModelId activation is single-instance: when the account Desktop is
+  # already running, Windows forwards this launch to that process and Codex
+  # opens another account window while dropping the isolated user-data-dir.
+  # API profiles must therefore use the validated Store executable directly.
+  if (Test-DreamSkinCodexIsolatedArguments -Arguments $Arguments) {
+    return Start-DreamSkinCodexDirect -Codex $Codex -Arguments $Arguments
+  }
   $appUserModelId = "$($Codex.AppUserModelId)"
   if ($appUserModelId -cnotmatch '^[A-Za-z0-9._-]{1,128}![A-Za-z0-9._-]{1,64}$') {
     throw 'The registered Codex AppUserModelId is unavailable or invalid.'
@@ -745,6 +760,31 @@ function Start-DreamSkinCodexForDebugging {
     @($PreserveProcessIds)
   } else {
     @(Get-DreamSkinCodexProcesses -Codex $Codex | ForEach-Object { [int]$_.ProcessId })
+  }
+  if (Test-DreamSkinCodexIsolatedArguments -Arguments $Arguments) {
+    try {
+      $isolatedProcessId = Start-DreamSkinCodexDirect -Codex $Codex -Arguments $Arguments
+    } catch {
+      $failureKind = Get-DreamSkinDirectLaunchFailureKind -Exception $_.Exception
+      throw [System.InvalidOperationException]::new(
+        "The isolated Codex profile could not start through the validated Store executable ($failureKind). Package activation was not attempted because it can only open another account window.",
+        $_.Exception)
+    }
+    $isolatedStatus = Wait-DreamSkinCodexDebugArgumentStatus -Codex $Codex -Port $Port
+    if ($isolatedStatus -ne 'forwarded') {
+      try {
+        Stop-DreamSkinCodex -Codex $Codex -PreserveProcessIds $preservedProcessIds -AllowForce
+      } catch {
+        throw "The isolated Codex profile did not retain its CDP arguments and could not be closed safely: $($_.Exception.Message)"
+      }
+      throw "Codex $($Codex.Version) did not retain the isolated profile CDP arguments during validated direct launch."
+    }
+    return [pscustomobject]@{
+      ProcessId = $isolatedProcessId
+      Strategy = 'direct-store-executable'
+      ArgumentStatus = $isolatedStatus
+      PackageArgumentStatus = 'skipped-isolated-profile'
+    }
   }
   $packageProcessId = Start-DreamSkinCodex -Codex $Codex -Arguments $Arguments
   $packageStatus = Wait-DreamSkinCodexDebugArgumentStatus -Codex $Codex -Port $Port
