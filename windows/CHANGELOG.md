@@ -1,5 +1,16 @@
 # Windows Changelog
 
+## 未发布
+
+### 新增
+
+- 新增 ApiCodex 多实例 WPF 启动器与统一系统托盘，可按默认账号或 API Profile 启动、聚焦、停止、恢复和验证对应 Desktop 实例；关闭管理面板不会关闭已运行的 Codex。
+- 启动器只读取 apicodex 的非敏感 profile 元数据，不显示或持久化 API Key、Cookie、`auth.json` 或 keyring 内容。
+
+### 改进
+
+- 首次加载先显示 profile 列表，再在后台批量扫描运行状态；启动器确认停止时使用 5 秒正常退出窗口，随后仍按官方可执行文件和 Profile 身份复核后才允许强制结束。
+
 ## 1.5.2 — 2026-07-25
 
 ### 修复

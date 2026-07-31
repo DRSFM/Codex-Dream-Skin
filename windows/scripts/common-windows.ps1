@@ -33,6 +33,43 @@ function Assert-DreamSkinPort {
   if ($Port -lt 1024 -or $Port -gt 65535) { throw "Port must be between 1024 and 65535: $Port" }
 }
 
+function Assert-DreamSkinInstanceId {
+  param([Parameter(Mandatory = $true)][string]$InstanceId)
+  if (-not $InstanceId -or $InstanceId -cnotmatch '^[a-z0-9][a-z0-9-]{0,63}$') {
+    throw "Instance ID is unsafe: $InstanceId"
+  }
+}
+
+function Get-DreamSkinInstanceStateRoot {
+  param([Parameter(Mandatory = $true)][string]$InstanceId)
+  Assert-DreamSkinInstanceId -InstanceId $InstanceId
+  $root = Join-Path $env:LOCALAPPDATA 'CodexDreamSkin'
+  if ($InstanceId -ceq 'default') { return $root }
+  return Join-Path $root (Join-Path 'instances' $InstanceId)
+}
+
+function Suspend-DreamSkinAuthenticationEnvironment {
+  $saved = @{}
+  foreach ($name in @(
+      'APICODEX_API_KEY', 'OPENAI_API_KEY', 'OPENAI_BASE_URL', 'OPENAI_ORG_ID',
+      'OPENAI_PROJECT_ID', 'CODEX_API_KEY', 'CODEX_BASE_URL'
+    )) {
+    $value = [Environment]::GetEnvironmentVariable($name, 'Process')
+    if ($null -ne $value) {
+      $saved[$name] = $value
+      Remove-Item -LiteralPath "Env:$name" -ErrorAction Stop
+    }
+  }
+  return $saved
+}
+
+function Restore-DreamSkinAuthenticationEnvironment {
+  param([Parameter(Mandatory = $true)][hashtable]$Saved)
+  foreach ($name in $Saved.Keys) {
+    Set-Item -LiteralPath "Env:$name" -Value "$($Saved[$name])" -ErrorAction Stop
+  }
+}
+
 function Test-DreamSkinPathEqual {
   param([string]$Left, [string]$Right)
   if (-not $Left -or -not $Right) { return $false }
@@ -391,6 +428,47 @@ function Get-DreamSkinProcessExecutablePath {
   } catch {
     return $null
   }
+}
+
+function Get-DreamSkinUserDataDirFromCommandLine {
+  param([string]$CommandLine)
+  if (-not $CommandLine) { return $null }
+  $match = [regex]::Match(
+    $CommandLine,
+    '(?i)(?:^|\s)--user-data-dir(?:=|\s+)(?:"(?<quoted>[^"]+)"|(?<plain>[^\s"]+))'
+  )
+  if (-not $match.Success) { return $null }
+  $value = if ($match.Groups['quoted'].Success) { $match.Groups['quoted'].Value } else { $match.Groups['plain'].Value }
+  try { return [System.IO.Path]::GetFullPath($value) } catch { return $null }
+}
+
+function Get-DreamSkinProcessUserDataDir {
+  param([Parameter(Mandatory = $true)][object]$ProcessInfo)
+  $current = $ProcessInfo
+  $visited = @{}
+  $expectedPath = Get-DreamSkinProcessExecutablePath -ProcessInfo $ProcessInfo
+  while ($null -ne $current -and -not $visited.ContainsKey([int]$current.ProcessId)) {
+    $visited[[int]$current.ProcessId] = $true
+    $currentPath = Get-DreamSkinProcessExecutablePath -ProcessInfo $current
+    if (-not $currentPath -or -not (Test-DreamSkinPathEqual -Left $currentPath -Right $expectedPath)) { break }
+    $profile = Get-DreamSkinUserDataDirFromCommandLine -CommandLine "$($current.CommandLine)"
+    if ($profile) { return $profile }
+    if ([int]$current.ParentProcessId -le 0) { break }
+    $current = Get-CimInstance Win32_Process -Filter "ProcessId = $([int]$current.ParentProcessId)" -ErrorAction SilentlyContinue
+  }
+  return $null
+}
+
+function Test-DreamSkinProcessProfile {
+  param(
+    [Parameter(Mandatory = $true)][object]$ProcessInfo,
+    [string]$ProfilePath,
+    [switch]$MatchProfile
+  )
+  if (-not $MatchProfile) { return $true }
+  $actual = Get-DreamSkinProcessUserDataDir -ProcessInfo $ProcessInfo
+  if (-not $ProfilePath) { return -not $actual }
+  return Test-DreamSkinPathEqual -Left $actual -Right $ProfilePath
 }
 
 # Windows PowerShell 5.1 promotes redirected native-command stderr lines to
@@ -855,14 +933,20 @@ function Test-DreamSkinPortAvailable {
 }
 
 function Test-DreamSkinCodexPortOwner {
-  param([int]$Port, [Parameter(Mandatory = $true)][object]$Codex)
+  param(
+    [int]$Port,
+    [Parameter(Mandatory = $true)][object]$Codex,
+    [string]$ProfilePath,
+    [switch]$MatchProfile
+  )
   $listeners = Get-DreamSkinPortListeners -Port $Port
   if ($listeners.Count -eq 0) { return $false }
   foreach ($listener in $listeners) {
     if ($listener.LocalAddress -notin @('127.0.0.1', '::1')) { return $false }
     $process = Get-CimInstance Win32_Process -Filter "ProcessId = $([int]$listener.OwningProcess)" -ErrorAction SilentlyContinue
     $processPath = if ($process) { Get-DreamSkinProcessExecutablePath -ProcessInfo $process } else { $null }
-    if (-not $processPath -or -not (Test-DreamSkinPathEqual -Left $processPath -Right $Codex.Executable)) {
+    if (-not $processPath -or -not (Test-DreamSkinPathEqual -Left $processPath -Right $Codex.Executable) -or
+      -not (Test-DreamSkinProcessProfile -ProcessInfo $process -ProfilePath $ProfilePath -MatchProfile:$MatchProfile)) {
       return $false
     }
   }
@@ -870,13 +954,18 @@ function Test-DreamSkinCodexPortOwner {
 }
 
 function Get-DreamSkinVerifiedCdpIdentity {
-  param([int]$Port, [Parameter(Mandatory = $true)][object]$Codex)
-  if (-not (Test-DreamSkinCodexPortOwner -Port $Port -Codex $Codex)) { return $null }
+  param(
+    [int]$Port,
+    [Parameter(Mandatory = $true)][object]$Codex,
+    [string]$ProfilePath,
+    [switch]$MatchProfile
+  )
+  if (-not (Test-DreamSkinCodexPortOwner -Port $Port -Codex $Codex -ProfilePath $ProfilePath -MatchProfile:$MatchProfile)) { return $null }
   $browser = Get-DreamSkinCdpBrowserIdentity -Port $Port
   if ($null -eq $browser) { return $null }
   $targets = Get-DreamSkinCdpTargets -Port $Port
   if ($targets.Count -eq 0) { return $null }
-  if (-not (Test-DreamSkinCodexPortOwner -Port $Port -Codex $Codex)) { return $null }
+  if (-not (Test-DreamSkinCodexPortOwner -Port $Port -Codex $Codex -ProfilePath $ProfilePath -MatchProfile:$MatchProfile)) { return $null }
   return [pscustomobject]@{
     BrowserId = $browser.BrowserId
     BrowserWebSocketDebuggerUrl = $browser.WebSocketDebuggerUrl
@@ -886,8 +975,14 @@ function Get-DreamSkinVerifiedCdpIdentity {
 }
 
 function Test-DreamSkinCodexCdpEndpoint {
-  param([int]$Port, [Parameter(Mandatory = $true)][object]$Codex)
-  return $null -ne (Get-DreamSkinVerifiedCdpIdentity -Port $Port -Codex $Codex)
+  param(
+    [int]$Port,
+    [Parameter(Mandatory = $true)][object]$Codex,
+    [string]$ProfilePath,
+    [switch]$MatchProfile
+  )
+  return $null -ne (Get-DreamSkinVerifiedCdpIdentity -Port $Port -Codex $Codex `
+    -ProfilePath $ProfilePath -MatchProfile:$MatchProfile)
 }
 
 function Get-DreamSkinVerifiedCdpIdentityForAnyRegistered {
@@ -896,9 +991,14 @@ function Get-DreamSkinVerifiedCdpIdentityForAnyRegistered {
   # any registered OpenAI.Codex install keeps the strict owner validation
   # (every candidate passed the same package identity checks) without
   # restarting a healthy skinned Codex just because the Store updated.
-  param([int]$Port)
+  param(
+    [int]$Port,
+    [string]$ProfilePath,
+    [switch]$MatchProfile
+  )
   foreach ($install in @(Get-DreamSkinRegisteredCodexInstalls)) {
-    $identity = Get-DreamSkinVerifiedCdpIdentity -Port $Port -Codex $install
+    $identity = Get-DreamSkinVerifiedCdpIdentity -Port $Port -Codex $install `
+      -ProfilePath $ProfilePath -MatchProfile:$MatchProfile
     if ($null -ne $identity) {
       return [pscustomobject]@{
         Identity = $identity
@@ -1053,11 +1153,16 @@ function Stop-DreamSkinRecordedInjector {
 }
 
 function Get-DreamSkinCodexProcesses {
-  param([Parameter(Mandatory = $true)][object]$Codex)
+  param(
+    [Parameter(Mandatory = $true)][object]$Codex,
+    [string]$ProfilePath,
+    [switch]$MatchProfile
+  )
   return @(Get-CimInstance Win32_Process -Filter "Name = 'ChatGPT.exe'" -ErrorAction SilentlyContinue |
     Where-Object {
       $processPath = Get-DreamSkinProcessExecutablePath -ProcessInfo $_
-      Test-DreamSkinPathEqual -Left $processPath -Right $Codex.Executable
+      (Test-DreamSkinPathEqual -Left $processPath -Right $Codex.Executable) -and
+        (Test-DreamSkinProcessProfile -ProcessInfo $_ -ProfilePath $ProfilePath -MatchProfile:$MatchProfile)
     })
 }
 
@@ -1081,34 +1186,44 @@ function Stop-DreamSkinCodex {
   param(
     [Parameter(Mandatory = $true)][object]$Codex,
     [AllowEmptyCollection()][int[]]$PreserveProcessIds = @(),
-    [switch]$AllowForce
+    [switch]$AllowForce,
+    [string]$ProfilePath,
+    [switch]$MatchProfile,
+    [ValidateRange(1, 60)][int]$GracePeriodSeconds = 15
   )
-  $processes = Get-DreamSkinCodexProcessesExcept -Codex $Codex -PreserveProcessIds $PreserveProcessIds
+  $preserved = @{}
+  foreach ($processId in $PreserveProcessIds) {
+    if ($processId -gt 0) { $preserved[$processId] = $true }
+  }
+  $getMatchingProcesses = {
+    @(Get-DreamSkinCodexProcesses -Codex $Codex -ProfilePath $ProfilePath -MatchProfile:$MatchProfile |
+      Where-Object { -not $preserved.ContainsKey([int]$_.ProcessId) })
+  }
+  $processes = @(& $getMatchingProcesses)
   if ($processes.Count -eq 0) { return }
   foreach ($item in $processes) {
     try { [void](Get-Process -Id $item.ProcessId -ErrorAction Stop).CloseMainWindow() } catch {}
   }
 
-  $deadline = (Get-Date).AddSeconds(15)
-  while ((Get-DreamSkinCodexProcessesExcept -Codex $Codex `
-      -PreserveProcessIds $PreserveProcessIds).Count -gt 0 -and (Get-Date) -lt $deadline) {
+  $deadline = (Get-Date).AddSeconds($GracePeriodSeconds)
+  while ((@(& $getMatchingProcesses)).Count -gt 0 -and (Get-Date) -lt $deadline) {
     Start-Sleep -Milliseconds 250
   }
-  $remaining = Get-DreamSkinCodexProcessesExcept -Codex $Codex -PreserveProcessIds $PreserveProcessIds
+  $remaining = @(& $getMatchingProcesses)
   if ($remaining.Count -eq 0) { return }
   if (-not $AllowForce) {
-    throw 'Codex did not close within 15 seconds. Close it manually or explicitly authorize a forced restart.'
+    throw "Codex did not close within $GracePeriodSeconds seconds. Close it manually or explicitly authorize a forced restart."
   }
   foreach ($item in $remaining) {
     $current = Get-CimInstance Win32_Process -Filter "ProcessId = $([int]$item.ProcessId)" -ErrorAction SilentlyContinue
     $currentPath = if ($current) { Get-DreamSkinProcessExecutablePath -ProcessInfo $current } else { $null }
-    if ($currentPath -and (Test-DreamSkinPathEqual -Left $currentPath -Right $Codex.Executable)) {
+    if ($currentPath -and (Test-DreamSkinPathEqual -Left $currentPath -Right $Codex.Executable) -and
+      (Test-DreamSkinProcessProfile -ProcessInfo $current -ProfilePath $ProfilePath -MatchProfile:$MatchProfile)) {
       Stop-Process -Id $item.ProcessId -Force -ErrorAction SilentlyContinue
     }
   }
   Start-Sleep -Milliseconds 500
-  if ((Get-DreamSkinCodexProcessesExcept -Codex $Codex `
-      -PreserveProcessIds $PreserveProcessIds).Count -gt 0) {
+  if ((@(& $getMatchingProcesses)).Count -gt 0) {
     throw 'Codex could not be stopped safely.'
   }
 }

@@ -71,3 +71,11 @@
 - 不修改官方 Codex/ChatGPT 的 `app.asar`、签名、系统 ACL 或受保护安装目录；不要求关闭 Gatekeeper、Defender、SmartScreen 或执行 `ExecutionPolicy Bypass`。
 - 安装、升级和卸载必须保留原子 staging、备份与回滚，验证目标身份后才操作进程或路径。拒绝不可信符号链接和路径重定向。
 - 对外部包、网络响应和状态文件使用有界读取、严格 schema、内容校验和 fail-closed 行为；日志和错误信息不得泄露凭据或私人路径内容。
+
+## 协作修改记录
+
+### 2026-08-01：合并 ApiCodex 多实例启动器
+
+- 修改：将 `codex/apicodex-unified-tray` 的 WPF 启动器、托盘和实例管理能力整合到最新 Windows 受管运行时。
+- 原因：让远端 `main` 直接包含截图所示的多实例控制台，同时保留主分支后续加入的主题包、安全校验和安装器机制。
+- 验证：合并完成后运行 Windows 静态回归与 WPF 启动器测试。

@@ -692,6 +692,93 @@ try {
   if ($argumentLine -cne '--remote-debugging-address=127.0.0.1 "--user-data-dir=C:\Dream Skin\Profile\\" ""') {
     throw 'Packaged-app argument line quoting failed.'
   }
+  if ((Get-DreamSkinInstanceStateRoot -InstanceId 'default') -cne (Join-Path $env:LOCALAPPDATA 'CodexDreamSkin') -or
+    (Get-DreamSkinInstanceStateRoot -InstanceId 'anyrouter') -cne
+      (Join-Path $env:LOCALAPPDATA 'CodexDreamSkin\instances\anyrouter')) {
+    throw 'Instance state roots are not backward-compatible or isolated.'
+  }
+  $fakeProfileProcess = [pscustomobject]@{
+    ProcessId = 7001
+    ParentProcessId = 0
+    CommandLine = '"C:\Program Files\OpenAI\ChatGPT.exe" --user-data-dir="C:\Users\Test\.apicodex-desktop\anyrouter"'
+    ExecutablePath = 'C:\Program Files\OpenAI\ChatGPT.exe'
+  }
+  $detectedProfile = Get-DreamSkinProcessUserDataDir -ProcessInfo $fakeProfileProcess
+  if (-not (Test-DreamSkinPathEqual -Left $detectedProfile -Right 'C:\Users\Test\.apicodex-desktop\anyrouter') -or
+    -not (Test-DreamSkinProcessProfile -ProcessInfo $fakeProfileProcess `
+      -ProfilePath 'C:\Users\Test\.apicodex-desktop\anyrouter' -MatchProfile) -or
+    (Test-DreamSkinProcessProfile -ProcessInfo $fakeProfileProcess `
+      -ProfilePath 'C:\Users\Test\.apicodex-desktop\other' -MatchProfile)) {
+    throw 'Process user-data-dir parsing or profile matching failed.'
+  }
+  $env:APICODEX_API_KEY = 'test-secret-must-not-reach-injector'
+  $savedAuthentication = Suspend-DreamSkinAuthenticationEnvironment
+  try {
+    if (Test-Path Env:APICODEX_API_KEY) { throw 'Injector environment retained APICODEX_API_KEY.' }
+  } finally {
+    Restore-DreamSkinAuthenticationEnvironment -Saved $savedAuthentication
+  }
+  if ($env:APICODEX_API_KEY -cne 'test-secret-must-not-reach-injector') {
+    throw 'Authentication environment was not restored after injector launch preparation.'
+  }
+  Remove-Item Env:APICODEX_API_KEY -ErrorAction SilentlyContinue
+
+  $originalLocalAppData = $env:LOCALAPPDATA
+  $env:LOCALAPPDATA = Join-Path $temporaryRoot 'instance-local-app-data'
+  try {
+    $customImage = Join-Path $temporaryRoot 'instance-custom.jpg'
+    Copy-Item -LiteralPath (Join-Path $Root 'assets\dream-reference.jpg') -Destination $customImage -Force
+    $appearanceScript = Join-Path $Root 'scripts\set-dream-skin-instance-appearance.ps1'
+    $appearance = & $appearanceScript -InstanceId launcher-test -ImagePath $customImage `
+      -Mode full-window -ThemeId crystal-clear | ConvertFrom-Json
+    if ($appearance.instanceId -cne 'launcher-test' -or -not $appearance.hasCustomImage -or
+      $appearance.mode -cne 'full-window' -or $appearance.themeId -cne 'crystal-clear') {
+      throw 'Instance appearance setter did not persist the requested image, mode, and theme.'
+    }
+    $instanceStateRoot = Get-DreamSkinInstanceStateRoot -InstanceId launcher-test
+    $instanceTheme = Read-DreamSkinTheme -ThemeDirectory `
+      (Get-DreamSkinThemePaths -StateRoot $instanceStateRoot).Active
+    if ($instanceTheme.Theme.art.taskMode -cne 'full' -or
+      $instanceTheme.Theme.colors.accent -cne '#35B8D4') {
+      throw 'Launcher appearance was not converted to the current managed-theme contract.'
+    }
+    $clearedAppearance = & $appearanceScript -InstanceId launcher-test -ClearImage `
+      -Mode home-card | ConvertFrom-Json
+    if ($clearedAppearance.hasCustomImage -or $clearedAppearance.mode -cne 'home-card') {
+      throw 'Instance appearance setter did not clear its custom-image marker or display mode.'
+    }
+    $missingStatusProfileRejected = $false
+    try {
+      & (Join-Path $Root 'scripts\get-dream-skin-instance-status.ps1') `
+        -InstanceId launcher-test -Port 9340 *> $null
+    } catch { $missingStatusProfileRejected = $true }
+    if (-not $missingStatusProfileRejected) {
+      throw 'Non-default status query accepted a missing profile path.'
+    }
+    $missingStopProfileRejected = $false
+    try {
+      & (Join-Path $Root 'scripts\stop-codex-instance.ps1') `
+        -InstanceId launcher-test -Port 9340 *> $null
+    } catch { $missingStopProfileRejected = $true }
+    if (-not $missingStopProfileRejected) {
+      throw 'Precise Desktop stop accepted a non-default instance without a profile path.'
+    }
+  } finally {
+    $env:LOCALAPPDATA = $originalLocalAppData
+  }
+
+  $restoreSource = Read-DreamSkinUtf8File -Path (Join-Path $Root 'scripts\restore-dream-skin.ps1')
+  if (-not $restoreSource.Contains('[ValidateRange(1, 60)][int]$StopGracePeriodSeconds = 15') -or
+    -not $restoreSource.Contains('-GracePeriodSeconds $StopGracePeriodSeconds')) {
+    throw 'Restore does not forward its explicit per-instance stop grace period.'
+  }
+  $launcherServiceSource = Read-DreamSkinUtf8File -Path `
+    (Join-Path $Root 'launcher\CodexDreamSkin.Launcher\Services\DreamSkinService.cs')
+  if (-not $launcherServiceSource.Contains('LauncherStopGracePeriodSeconds = 5') -or
+    -not $launcherServiceSource.Contains('"-StopGracePeriodSeconds", LauncherStopGracePeriodSeconds.ToString()') -or
+    -not $launcherServiceSource.Contains('"-GracePeriodSeconds", LauncherStopGracePeriodSeconds.ToString()')) {
+    throw 'The launcher does not scope its shorter stop grace period to explicit stop requests.'
+  }
   Initialize-DreamSkinPackageLauncher
   if (-not ('CodexDreamSkin.PackageLauncher' -as [type])) {
     throw 'Packaged-app activation helper did not compile.'

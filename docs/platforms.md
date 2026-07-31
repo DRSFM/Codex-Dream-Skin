@@ -29,7 +29,10 @@
 |------|------|
 | 源码（本整理包） | `Codex-Dream-Skin/windows/` |
 | 安装后的受管运行时 | `%LOCALAPPDATA%\CodexDreamSkin\engine` |
-| 状态 / 日志 | `%LOCALAPPDATA%\CodexDreamSkin` |
+| 默认实例状态 / 日志 | `%LOCALAPPDATA%\CodexDreamSkin` |
+| 非默认实例状态 / 日志 | `%LOCALAPPDATA%\CodexDreamSkin\instances\<id>` |
+| 图形启动器设置 | `%LOCALAPPDATA%\CodexDreamSkin\launcher\settings.json`（仅保存非敏感端口和 UI 数据） |
+| 图形启动器源码 / 发布物 | `windows\launcher\` / `windows\launcher\release\` |
 | Codex 配置 | `%USERPROFILE%\.codex\config.toml` |
 | 默认 CDP 端口 | 首选 `9335`，冲突时自动选空闲口（Mac 包默认从 `9341` 起） |
 
@@ -52,6 +55,9 @@ Windows 普通启动、失败回滚与恢复重开均从已注册的 `OpenAI.Cod
 | 官方签名校验 | ✅ | Store 签名类型 + 包身份 |
 | 客户部署提示词 | ✅ | ❌（可用 Mac 文案改写） |
 | 旧版离线 ZIP | ✅ `build-client-release.sh` | 不再建议手动压缩源码 |
+| 多实例图形启动器 | ❌ | ✅ WPF，自包含 `win-x64` |
+
+Windows API Desktop profile 由 apicodex 管理 `CODEX_HOME`、keyring 和 Desktop 数据目录；启动器只读取非敏感 profile 元数据。实例级操作必须同时匹配已注册的官方可执行文件、回环 CDP 端口和规范化的 `--user-data-dir`，不能只凭端口或进程名管理实例。
 
 ## 自适应图像主题契约
 

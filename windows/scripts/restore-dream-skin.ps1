@@ -1,16 +1,20 @@
 [CmdletBinding()]
 param(
   [int]$Port = 9335,
+  [string]$InstanceId = 'default',
+  [string]$ProfilePath,
   [switch]$Uninstall,
   [switch]$RestoreBaseTheme,
   [switch]$RecoverConfigBackup,
   [switch]$PromptRestart,
   [switch]$ForceRestart,
-  [switch]$NoRelaunch
+  [switch]$NoRelaunch,
+  [ValidateRange(1, 60)][int]$StopGracePeriodSeconds = 15
 )
 
 $ErrorActionPreference = 'Stop'
 $PortExplicit = $PSBoundParameters.ContainsKey('Port')
+$ProfileExplicit = $PSBoundParameters.ContainsKey('ProfilePath')
 . (Join-Path $PSScriptRoot 'common-windows.ps1')
 . (Join-Path $PSScriptRoot 'theme-windows.ps1')
 
@@ -20,12 +24,32 @@ try {
     throw 'Choose either -RestoreBaseTheme or -RecoverConfigBackup, not both.'
   }
   Assert-DreamSkinPort -Port $Port
+  Assert-DreamSkinInstanceId -InstanceId $InstanceId
+  if ($ProfilePath) { $ProfilePath = [System.IO.Path]::GetFullPath($ProfilePath) }
+  if ($InstanceId -cne 'default' -and ($Uninstall -or $RestoreBaseTheme -or $RecoverConfigBackup)) {
+    throw 'Non-default Dream Skin instances cannot uninstall shared shortcuts or restore the default Codex config.'
+  }
 
-  $StateRoot = Join-Path $env:LOCALAPPDATA 'CodexDreamSkin'
+  $StateRoot = Get-DreamSkinInstanceStateRoot -InstanceId $InstanceId
   $themePaths = Get-DreamSkinThemePaths -StateRoot $StateRoot
   Ensure-DreamSkinManagedDirectory -Path $themePaths.Root -Root $themePaths.Root
   $StatePath = Join-Path $StateRoot 'state.json'
   $state = Read-DreamSkinState -Path $StatePath
+  if ($null -ne $state -and $state.instanceId -and "$($state.instanceId)" -cne $InstanceId) {
+    throw "Dream Skin state belongs to another instance: $($state.instanceId)"
+  }
+  if (-not $ProfileExplicit -and $null -ne $state -and $state.profilePath) {
+    $ProfilePath = [System.IO.Path]::GetFullPath("$($state.profilePath)")
+  }
+  if ($InstanceId -cne 'default' -and -not $ProfilePath) {
+    throw 'A non-default Dream Skin restore requires an explicit or saved profile path.'
+  }
+  if ($null -ne $state -and $state.profilePath -and
+    -not (Test-DreamSkinPathEqual -Left "$($state.profilePath)" -Right $ProfilePath)) {
+    throw 'The requested profile does not match the saved Dream Skin instance state.'
+  }
+  $MatchProfile = $true
+  $normalLaunchArguments = if ($ProfilePath) { @("--user-data-dir=$ProfilePath") } else { @() }
   if (-not $PortExplicit -and $null -ne $state -and $state.port) {
     $Port = [int]$state.port
     Assert-DreamSkinPort -Port $Port
@@ -39,17 +63,22 @@ try {
     (Test-DreamSkinPathEqual -Left $savedPathCandidate.PackageRoot -Right $currentCodex.PackageRoot) -and
     (Test-DreamSkinPathEqual -Left $savedPathCandidate.Executable -Right $currentCodex.Executable))
   if ($null -ne $savedPathCandidate -and $null -eq $savedCodex -and -not $candidateMatchesCurrent) {
-    $unverifiedSavedRunning = (Get-DreamSkinCodexProcesses -Codex $savedPathCandidate).Count -gt 0
-    $unverifiedSavedOwnsPort = Test-DreamSkinCodexPortOwner -Port $Port -Codex $savedPathCandidate
+    $unverifiedSavedRunning = (Get-DreamSkinCodexProcesses -Codex $savedPathCandidate `
+      -ProfilePath $ProfilePath -MatchProfile:$MatchProfile).Count -gt 0
+    $unverifiedSavedOwnsPort = Test-DreamSkinCodexPortOwner -Port $Port -Codex $savedPathCandidate `
+      -ProfilePath $ProfilePath -MatchProfile:$MatchProfile
     if ($unverifiedSavedRunning -or $unverifiedSavedOwnsPort) {
       throw 'The saved Codex path is still active but no longer matches a registered OpenAI.Codex package. Close it manually; state and configuration were preserved.'
     }
   }
   $savedIsDifferent = [bool]($null -ne $savedCodex -and $null -ne $currentCodex -and
     -not (Test-DreamSkinPathEqual -Left $savedCodex.Executable -Right $currentCodex.Executable))
-  $currentRunning = $null -ne $currentCodex -and (Get-DreamSkinCodexProcesses -Codex $currentCodex).Count -gt 0
-  $savedRunning = $null -ne $savedCodex -and (Get-DreamSkinCodexProcesses -Codex $savedCodex).Count -gt 0
-  $savedOwnsPort = $null -ne $savedCodex -and (Test-DreamSkinCodexPortOwner -Port $Port -Codex $savedCodex)
+  $currentRunning = $null -ne $currentCodex -and (Get-DreamSkinCodexProcesses -Codex $currentCodex `
+    -ProfilePath $ProfilePath -MatchProfile:$MatchProfile).Count -gt 0
+  $savedRunning = $null -ne $savedCodex -and (Get-DreamSkinCodexProcesses -Codex $savedCodex `
+    -ProfilePath $ProfilePath -MatchProfile:$MatchProfile).Count -gt 0
+  $savedOwnsPort = $null -ne $savedCodex -and (Test-DreamSkinCodexPortOwner -Port $Port -Codex $savedCodex `
+    -ProfilePath $ProfilePath -MatchProfile:$MatchProfile)
   if ($savedIsDifferent -and $currentRunning -and ($savedRunning -or $savedOwnsPort)) {
     throw 'Multiple Codex package versions are active. Close them manually before restore; state and configuration were preserved.'
   }
@@ -64,8 +93,10 @@ try {
     }
   }
   $relaunchCodex = if ($null -ne $currentCodex) { $currentCodex } else { $codex }
-  $codexRunning = $null -ne $codex -and (Get-DreamSkinCodexProcesses -Codex $codex).Count -gt 0
-  $portOwnedByCodex = $null -ne $codex -and (Test-DreamSkinCodexPortOwner -Port $Port -Codex $codex)
+  $codexRunning = $null -ne $codex -and (Get-DreamSkinCodexProcesses -Codex $codex `
+    -ProfilePath $ProfilePath -MatchProfile:$MatchProfile).Count -gt 0
+  $portOwnedByCodex = $null -ne $codex -and (Test-DreamSkinCodexPortOwner -Port $Port -Codex $codex `
+    -ProfilePath $ProfilePath -MatchProfile:$MatchProfile)
   if ($portOwnedByCodex -and -not $codexRunning) {
     throw 'A Codex-owned listener exists without a manageable Codex process; state was preserved.'
   }
@@ -101,9 +132,11 @@ try {
 
   $restoreError = $null
   try {
-    Stop-DreamSkinTrayProcess
+    if ($InstanceId -ceq 'default') { Stop-DreamSkinTrayProcess }
     if ($shouldCloseCodex) {
-      Stop-DreamSkinCodex -Codex $codex -AllowForce:$forceAuthorized
+      Stop-DreamSkinCodex -Codex $codex -AllowForce:$forceAuthorized `
+        -ProfilePath $ProfilePath -MatchProfile:$MatchProfile `
+        -GracePeriodSeconds $StopGracePeriodSeconds
       if ($portOwnedByCodex -and -not (Wait-DreamSkinPortAvailable -Port $Port -TimeoutSeconds 5)) {
         throw "Port $Port is still listening after Codex closed; state was preserved for inspection."
       }
@@ -148,13 +181,14 @@ try {
       if ($null -eq $relaunchCodex -or -not (Test-Path -LiteralPath $relaunchCodex.Executable)) {
         throw 'Codex cannot be reopened because its current executable is unavailable.'
       }
-      $null = Start-DreamSkinCodex -Codex $relaunchCodex
+      $null = Start-DreamSkinCodex -Codex $relaunchCodex -Arguments $normalLaunchArguments
     }
   } catch {
     $restoreError = $_
     if ($shouldCloseCodex -and -not $NoRelaunch -and $null -ne $relaunchCodex -and
-      (Get-DreamSkinCodexProcesses -Codex $codex).Count -eq 0 -and (Test-Path -LiteralPath $relaunchCodex.Executable)) {
-      try { $null = Start-DreamSkinCodex -Codex $relaunchCodex } catch {
+      (Get-DreamSkinCodexProcesses -Codex $codex -ProfilePath $ProfilePath `
+        -MatchProfile:$MatchProfile).Count -eq 0 -and (Test-Path -LiteralPath $relaunchCodex.Executable)) {
+      try { $null = Start-DreamSkinCodex -Codex $relaunchCodex -Arguments $normalLaunchArguments } catch {
         Write-Warning 'Restore failed and Codex could not be reopened automatically.'
       }
     }

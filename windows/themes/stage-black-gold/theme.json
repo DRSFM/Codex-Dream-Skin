@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "stage-black-gold",
+  "name": "舞台黑金",
+  "description": "剧场黑、香槟金与克制聚光",
+  "scheme": "light",
+  "brandTitle": "舞台黑金",
+  "brandSubtitle": "THE SHOW MUST GO ON",
+  "signature": "Black / Gold ✦",
+  "note": "✦",
+  "ribbon": "✦  ENCORE  ✦",
+  "colors": {
+    "background": "#FBF8F0",
+    "backgroundAlt": "#E9DFC8",
+    "panel": "#FFFDF7",
+    "panelAlt": "#F4EBD8",
+    "accent": "#B58A31",
+    "accentAlt": "#3A3328",
+    "secondary": "#A7833C",
+    "highlight": "#5D4515",
+    "ink": "#29241C",
+    "muted": "#756B59",
+    "line": "#CDBA8D",
+    "onAccent": "#FFFFFF"
+  }
+}

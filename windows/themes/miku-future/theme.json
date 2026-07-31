@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "miku-future",
+  "name": "初音未来",
+  "description": "未来青绿、电子蓝与舞台黑",
+  "scheme": "light",
+  "brandTitle": "MIKU FUTURE STAGE",
+  "brandSubtitle": "SING · CODE · CREATE",
+  "signature": "Future Sound 01",
+  "note": "01",
+  "ribbon": "♪  DIGITAL STAR  ♪",
+  "colors": {
+    "background": "#ECFFFB",
+    "backgroundAlt": "#CFF4EF",
+    "panel": "#F8FFFE",
+    "panelAlt": "#DFF6F3",
+    "accent": "#39E5C5",
+    "accentAlt": "#36B9FF",
+    "secondary": "#FF5D9E",
+    "highlight": "#087C78",
+    "ink": "#123F3B",
+    "muted": "#587E79",
+    "line": "#82C8C0",
+    "onAccent": "#05201E"
+  }
+}

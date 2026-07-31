@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "inspiration-cosmos",
+  "name": "灵感小宇宙",
+  "description": "深空蓝紫、霓虹青与星云粉",
+  "scheme": "light",
+  "brandTitle": "灵感小宇宙",
+  "brandSubtitle": "IDEAS IN ORBIT",
+  "signature": "Explore the Unknown ✦",
+  "note": "✦",
+  "ribbon": "✦  COSMOS  ✦",
+  "colors": {
+    "background": "#F5F3FF",
+    "backgroundAlt": "#DDD7FF",
+    "panel": "#FCFBFF",
+    "panelAlt": "#ECE8FF",
+    "accent": "#8E6CFF",
+    "accentAlt": "#35D6FF",
+    "secondary": "#FF6EC7",
+    "highlight": "#5027A8",
+    "ink": "#271F52",
+    "muted": "#6F6B91",
+    "line": "#B9AFE0",
+    "onAccent": "#FFFFFF"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "fortune-work",
+  "name": "财神打工",
+  "description": "喜庆朱红、暖金与奶油纸张质感",
+  "scheme": "light",
+  "brandTitle": "财神打工 · 今日开工",
+  "brandSubtitle": "好运与代码同步到账",
+  "signature": "好运加载中 🧧",
+  "note": "¥",
+  "ribbon": "✦  🧧  ✦",
+  "colors": {
+    "background": "#FFF8EE",
+    "backgroundAlt": "#FFE8DD",
+    "panel": "#FFFDF7",
+    "panelAlt": "#FFF0E0",
+    "accent": "#E23D3D",
+    "accentAlt": "#F4B740",
+    "secondary": "#FF7A45",
+    "highlight": "#8E1B1B",
+    "ink": "#5A2418",
+    "muted": "#8C6556",
+    "line": "#E4AA78",
+    "onAccent": "#FFFFFF"
+  }
+}

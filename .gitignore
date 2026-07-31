@@ -23,3 +23,10 @@ TASK_PROGRESS.md
 修复记录*.md
 docs/architecture-cdp-and-cross-platform-grok45.md
 docs/unified-skin-runtime-plan.md
+
+# Windows launcher build and generated shortcut artifacts
+windows/launcher/**/bin/
+windows/launcher/**/obj/
+windows/launcher/release/
+windows/launcher/release-*/
+windows/shortcuts/*.lnk
