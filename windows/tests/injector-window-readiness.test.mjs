@@ -10,10 +10,13 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const startPath = path.resolve(here, "../scripts/start-dream-skin.ps1");
 
 const selectors = {
-  shell: "main.main-surface",
+  shell: 'main:is(.main-surface, [data-app-shell-main-surface], [class*="_MainContentSurface_"])',
   sidebar: "aside.app-shell-left-panel",
   composer: ".composer-surface-chrome",
+  homeIcon: '[data-testid="home-icon"]',
   home: '[role="main"]:has([data-testid="home-icon"])',
+  gameSource: '[data-feature="game-source"]',
+  suggestions: ".group\\/home-suggestions",
   settings: 'input[name="appearance-theme"]',
   themePreview: '[data-testid="theme-preview"]',
 };
@@ -22,19 +25,49 @@ function makeRect(width = 800, height = 600, x = 0, y = 0) {
   return { x, y, width, height, right: x + width, bottom: y + height };
 }
 
-function makeElement({ rect = makeRect(), style = {}, visible = true } = {}) {
-  return {
+function makeElement({
+  rect = makeRect(),
+  style = {},
+  visible = true,
+  text = "",
+  children = [],
+} = {}) {
+  const element = {
     isConnected: true,
+    textContent: text,
     _style: {
       display: "block",
       visibility: "visible",
       contentVisibility: "visible",
       opacity: "1",
+      color: "rgb(240, 240, 240)",
       ...style,
     },
+    childNodes: text ? [{ nodeType: 3, textContent: text }] : [],
+    children,
     getBoundingClientRect: () => rect,
     checkVisibility: () => visible,
     querySelector: () => null,
+    querySelectorAll: () => [],
+  };
+  return element;
+}
+
+function makeSuggestionButton({
+  rect = makeRect(220, 80, 40, 300),
+  color = "rgb(210, 210, 210)",
+  labelColor = color,
+  text = "Suggestion",
+} = {}) {
+  const label = makeElement({
+    rect: makeRect(180, 24, rect.x + 12, rect.y + 12),
+    style: { color: labelColor },
+    text,
+  });
+  return {
+    ...makeElement({ rect, style: { color } }),
+    getBoundingClientRect: () => rect,
+    querySelectorAll: () => [label],
   };
 }
 
@@ -42,15 +75,20 @@ function makeHome(options = {}) {
   const home = makeElement(options);
   const hero = makeElement(options.hero ?? {});
   home.firstElementChild = { firstElementChild: { firstElementChild: hero } };
+  const suggestions = options.suggestions ?? null;
+  home.querySelector = (selector) => selector === selectors.suggestions ? suggestions : null;
   return home;
 }
 
 function makeDomFixture({
-  scope = { level: "L1", baseState: "thread" },
+  scope = { level: "L1", baseState: "thread", missingL1: [] },
   shell = makeElement(),
   sidebar = makeElement(),
   composer = makeElement(),
   home = null,
+  homeSignal = null,
+  genericMain = null,
+  genericInput = null,
   settings = null,
   visibilityState = "visible",
   hidden = false,
@@ -74,7 +112,11 @@ function makeDomFixture({
       if (selector === selectors.shell) return shell;
       if (selector === selectors.sidebar) return sidebar;
       if (selector === selectors.composer) return composer;
+      if (selector === selectors.homeIcon) return null;
       if (selector === selectors.home) return home;
+      if (selector === selectors.gameSource || selector === selectors.suggestions) return homeSignal;
+      if (selector === '[data-ds-part="main"], [data-ds-part="home"]') return genericMain ?? home;
+      if (selector === '[data-ds-part="composer"]') return genericInput;
       if (selector === selectors.settings || selector === selectors.themePreview) return settings;
       return null;
     },
@@ -83,7 +125,7 @@ function makeDomFixture({
   };
   const window = {
     __CODEX_DREAM_SKIN_STATE__: {
-      version: "1.5.5",
+      version: "1.5.11",
       themeId: "fixture-theme",
       revision: "fixture-revision",
       styleMode: "style",
@@ -148,6 +190,8 @@ test("normal L1 renderer requires and records the exact target window binding", 
     documentPass: true,
     viewportPass: true,
     structurePass: true,
+    nativeWindowPass: true,
+    fallbackWindowPass: false,
   });
   assert.deepEqual(session.calls, [
     { method: "Browser.getWindowForTarget", params: { targetId: "page-main" } },
@@ -155,7 +199,7 @@ test("normal L1 renderer requires and records the exact target window binding", 
   ]);
 });
 
-test("visible settings and home anchors are the only L0 structure exceptions", async () => {
+test("visible settings is the only L0 structure exception", async () => {
   const settings = await verify({
     dom: makeDomFixture({
       scope: { level: "L0", baseState: "settings" },
@@ -168,13 +212,35 @@ test("visible settings and home anchors are the only L0 structure exceptions", a
 
   const home = await verify({
     dom: makeDomFixture({
-      scope: { level: "L0", baseState: "home" },
+      scope: {
+        level: "L0",
+        baseState: "home",
+        missingL1: ["left-panel"],
+      },
       shell: null,
       sidebar: null,
       home: makeHome({ rect: makeRect(900, 650, 20, 20) }),
     }),
   });
-  assert.equal(home.result.pass, true);
+  assert.equal(home.result.pass, false);
+  assert.equal(home.result.readiness.structurePass, false);
+
+  const fallbackHome = makeHome({ rect: makeRect(900, 650, 20, 20) });
+  const lateHomeIconSignal = {
+    closest: (selector) => selector === '[role="main"]' ? fallbackHome : null,
+  };
+  const lateHomeIcon = await verify({
+    dom: makeDomFixture({
+      scope: { level: "L0", baseState: "home" },
+      shell: null,
+      sidebar: null,
+      home: null,
+      homeSignal: lateHomeIconSignal,
+    }),
+  });
+  assert.equal(lateHomeIcon.result.homePresent, true);
+  assert.equal(lateHomeIcon.result.pass, false);
+  assert.equal(lateHomeIcon.result.readiness.structurePass, false);
 
   const noAnchor = await verify({
     dom: makeDomFixture({
@@ -185,20 +251,172 @@ test("visible settings and home anchors are the only L0 structure exceptions", a
   });
   assert.equal(noAnchor.result.pass, false);
   assert.equal(noAnchor.result.readiness.structurePass, false);
+
+  const generic = await verify({
+    dom: makeDomFixture({
+      shell: null,
+      sidebar: null,
+      home: null,
+      genericMain: makeElement({ rect: makeRect(900, 650, 20, 20) }),
+      genericInput: makeElement({ rect: makeRect(620, 80, 180, 620) }),
+    }),
+  });
+  assert.equal(generic.result.pass, true);
+  assert.equal(generic.result.readiness.structurePass, true);
+
+  const genericL0 = await verify({
+    dom: makeDomFixture({
+      scope: {
+        level: "L0",
+        baseState: "thread",
+        missingL1: ["shell-main", "left-panel", "header-tint"],
+      },
+      shell: null,
+      sidebar: null,
+      home: null,
+      genericMain: makeElement({ rect: makeRect(900, 650, 20, 20) }),
+      genericInput: makeElement({ rect: makeRect(620, 80, 180, 620) }),
+    }),
+  });
+  assert.equal(genericL0.result.pass, false,
+    "Generic app parts must not turn an L0 thread with missing shell/header anchors into visible success.");
+  assert.equal(genericL0.result.readiness.structurePass, false);
+
+  const falseHome = await verify({
+    dom: makeDomFixture({
+      scope: { level: "L1", baseState: "home", missingL1: [] },
+      home: null,
+      homeSignal: null,
+      genericMain: makeElement({ rect: makeRect(900, 650, 20, 20) }),
+      genericInput: makeElement({ rect: makeRect(620, 80, 180, 620) }),
+    }),
+  });
+  assert.equal(falseHome.result.homePresent, false);
+  assert.equal(falseHome.result.pass, false,
+    "A renderer that claims Home must expose a real Home identity signal.");
 });
 
-test("missing or unsupported Browser window APIs fail closed", async () => {
-  const missing = await verify({
+test("home verification matches macOS and does not require a fixed suggestion-card count", async () => {
+  const oneSuggestion = {
+    querySelectorAll: (selector) => selector === "button"
+      ? [makeSuggestionButton({ text: "One real card" })]
+      : [],
+  };
+  const homeWithOneSuggestion = await verify({
+    dom: makeDomFixture({
+      home: makeHome({
+        rect: makeRect(900, 650, 20, 20),
+        hero: { rect: makeRect(800, 260, 40, 60) },
+        suggestions: oneSuggestion,
+      }),
+    }),
+  });
+  assert.equal(homeWithOneSuggestion.result.homePresent, true);
+  assert.equal(homeWithOneSuggestion.result.visibleCardCount, 1);
+  assert.equal(homeWithOneSuggestion.result.pass, true);
+
+  const mismatchedSuggestion = {
+    querySelectorAll: (selector) => selector === "button"
+      ? [makeSuggestionButton({
+        text: "Hidden by mismatched text color",
+        color: "rgb(210, 210, 210)",
+        labelColor: "rgb(10, 10, 10)",
+      })]
+      : [],
+  };
+  const badHome = await verify({
+    dom: makeDomFixture({
+      home: makeHome({
+        rect: makeRect(900, 650, 20, 20),
+        hero: { rect: makeRect(800, 260, 40, 60) },
+        suggestions: mismatchedSuggestion,
+      }),
+    }),
+  });
+  assert.equal(badHome.result.suggestionLabelColorsMatch, false);
+  assert.equal(badHome.result.pass, false);
+});
+
+// Regression for #256. The previous version of this test asserted that a
+// -32000 "no window with given target found" reply must fail verification, and
+// went further than macOS by demanding the same for -32601. Codex 26.721.x
+// (Chrome/150) answers -32000 for the app's real, focused, on-screen window --
+// confirmed live over CDP: the error is byte-identical before and after
+// actually activating the window, while documentVisibility correctly flips
+// hidden -> visible. Locking that in meant Windows could never verify on that
+// build, i.e. the assertion protected the bug. Both codes now mean "the Browser
+// window API told us nothing", and the renderer's own visibility evidence
+// decides. The fail-closed part that is real -- a hidden document -- is
+// asserted below and must stay.
+test("uninformative Browser window replies defer to the renderer, hidden documents still fail", async () => {
+  for (const [label, bindingError] of [
+    ["window-not-found", new Error("No window with given target found (-32000)")],
+    ["window-not-found-by-code", Object.assign(new Error("Browser window not found"), { cdpCode: -32000 })],
+    ["domain-unsupported", new Error("'Browser.getWindowForTarget' wasn't found (-32601)")],
+    ["domain-unsupported-by-code", Object.assign(new Error("Protocol method unavailable"), { cdpCode: -32601 })],
+    ["domain-unsupported-prose", new Error("Method not found (-32601)")],
+  ]) {
+    const visible = await verify({ bindingError });
+    assert.equal(visible.result.pass, true,
+      `${label}: a visible, laid-out renderer must still verify when CDP cannot resolve the native window.`);
+    assert.equal(visible.result.nativeWindow.unsupported, true, label);
+    assert.equal(visible.result.nativeWindow.pass, false, label);
+    assert.equal(visible.result.readiness.windowPass, true, label);
+    assert.equal(visible.result.readiness.nativeWindowPass, false, label);
+    assert.equal(visible.result.readiness.fallbackWindowPass, true, label);
+
+    const hidden = await verify({
+      bindingError,
+      dom: makeDomFixture({ visibilityState: "hidden", hidden: true }),
+    });
+    assert.equal(hidden.result.pass, false,
+      `${label}: a hidden document must fail even when the native window check is unusable.`);
+    assert.equal(hidden.result.readiness.documentPass, false, label);
+
+    const tiny = await verify({
+      bindingError,
+      dom: makeDomFixture({ viewportWidth: 319, viewportHeight: 239 }),
+    });
+    assert.equal(tiny.result.pass, false,
+      `${label}: an unreasonable viewport must fail even when the native window check is unusable.`);
+    assert.equal(tiny.result.readiness.viewportPass, false, label);
+
+    const noStructure = await verify({
+      bindingError,
+      dom: makeDomFixture({ shell: null, sidebar: null }),
+    });
+    assert.equal(noStructure.result.pass, false,
+      `${label}: a missing L1 shell must fail even when the native window check is unusable.`);
+    assert.equal(noStructure.result.readiness.structurePass, false, label);
+  }
+});
+
+test("distinguishable window reasons keep their labels", async () => {
+  const notFound = await verify({
     bindingError: new Error("No window with given target found (-32000)"),
   });
-  assert.equal(missing.result.pass, false);
-  assert.equal(missing.result.nativeWindow.reason, "target-window-unavailable");
+  assert.equal(notFound.result.nativeWindow.reason, "browser-window-not-found");
 
   const unsupported = await verify({
     bindingError: new Error("'Browser.getWindowForTarget' wasn't found (-32601)"),
   });
-  assert.equal(unsupported.result.pass, false);
   assert.equal(unsupported.result.nativeWindow.reason, "browser-window-api-unavailable");
+});
+
+test("unrecognized window transport failures still fail closed", async () => {
+  // Anything that is not a "the API cannot answer" signal -- a dropped socket,
+  // a timeout, an unclassified protocol code -- has no fallback and must fail.
+  for (const bindingError of [
+    new Error("CDP socket closed"),
+    new Error("CDP command timed out: Browser.getWindowForTarget"),
+    Object.assign(new Error("Internal error (-32603)"), { cdpCode: -32603 }),
+  ]) {
+    const result = await verify({ bindingError });
+    assert.equal(result.result.pass, false, bindingError.message);
+    assert.equal(result.result.nativeWindow.reason, "target-window-unavailable", bindingError.message);
+    assert.notEqual(result.result.nativeWindow.unsupported, true, bindingError.message);
+    assert.equal(result.result.readiness.windowPass, false, bindingError.message);
+  }
 
   const zeroWindowId = await verify({ windowId: 0 });
   assert.equal(zeroWindowId.result.pass, false);

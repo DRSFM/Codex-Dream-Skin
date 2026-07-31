@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
+import { Script } from "node:vm";
 import { readImageMetadata } from "./image-metadata.mjs";
 import {
   normalizeThemeColor,
@@ -42,7 +43,7 @@ const stableTestidLiteral = (testid) => {
   }
   return JSON.stringify(`[data-testid="${testid}"]`);
 };
-const SKIN_VERSION = "1.5.5";
+const SKIN_VERSION = "1.5.11";
 const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]"]);
 const CDP_ID_PATTERN = /^[A-Za-z0-9._-]{1,200}$/;
 const MAX_ART_BYTES = 10 * 1024 * 1024;
@@ -229,9 +230,16 @@ export function assessRendererVerification(renderer, nativeWindow, expected) {
   const viewportPass = hasReasonableDimensions(viewportWidth, viewportHeight);
   const documentVisible = result.documentVisibility === "visible";
   const settingsRoute = result.scope?.baseState === "settings";
-  const structurePass = settingsRoute
-    ? Boolean(result.settings?.visible)
-    : Boolean(result.shell?.visible) && Boolean(result.sidebar?.visible);
+  const homeRoute = result.scope?.baseState === "home" || result.homeRoute || result.homePresent;
+  const l1ScopePass = result.scope?.level === "L1" &&
+    Array.isArray(result.scope?.missingL1) && result.scope.missingL1.length === 0;
+  const genericStructurePass = l1ScopePass && Boolean(result.genericMain?.visible) &&
+    (Boolean(result.genericInput?.visible) || Boolean(homeRoute && result.homePresent));
+  const l0StructurePass = result.scope?.level === "L0" &&
+    settingsRoute && Boolean(result.settings?.visible);
+  const structurePass = l0StructurePass || (l1ScopePass && (
+    (Boolean(result.shell?.visible) && Boolean(result.sidebar?.visible)) || genericStructurePass
+  ));
   const nativeWindowPass = nativeWindow?.status === "ready";
   const fallbackWindowPass = nativeWindow?.status === "unsupported";
   const windowPass = documentVisible && viewportPass
@@ -243,9 +251,11 @@ export function assessRendererVerification(renderer, nativeWindow, expected) {
     && (!expected.expectedRevision || result.revision === expected.expectedRevision);
   const visibleSuggestionLabels = Array.isArray(result.suggestionLabels)
     ? result.suggestionLabels.filter((item) => item?.visible) : [];
-  const homePass = !result.homeRoute || (
-    result.homePresent && result.hero?.visible && result.hero.width >= 280
-    && result.hero.height >= 120 && (result.visibleCardCount === 0 || (
+  const homeFallbackVisible = Boolean(homeRoute && result.homePresent && result.genericMain?.visible);
+  const homePass = !homeRoute || (
+    result.homePresent && ((result.hero?.visible && result.hero.width >= 280
+      && result.hero.height >= 120) || homeFallbackVisible)
+    && (result.visibleCardCount === 0 || (
       visibleSuggestionLabels.length >= result.visibleCardCount
       && result.suggestionLabelColorsMatch
     ))
@@ -267,7 +277,7 @@ export function assessRendererVerification(renderer, nativeWindow, expected) {
   result.softNotes = {
     projectButtonOptional: !result.projectButton?.visible,
     composerOptionalOnNonTaskRoutes: !result.composer?.visible,
-    suggestionCardsOptional: result.homeRoute && result.visibleCardCount === 0,
+    suggestionCardsOptional: homeRoute && result.visibleCardCount === 0,
   };
   return result;
 }
@@ -496,20 +506,29 @@ async function listAppTargets(port) {
 
 async function probeSession(session) {
   return session.evaluate(`(() => {
+    const genericCodexSurface = () => {
+      if (location.protocol !== 'app:') return false;
+      const main = document.querySelector('main, [role="main"]');
+      const input = document.querySelector('textarea, [contenteditable="true"], [role="textbox"]');
+      const branded = Boolean(document.querySelector(
+        ${stableTestidLiteral("app-shell-header-context-menu-surface")},
+      ));
+      return Boolean(main && input && branded);
+    };
     const markers = {
       shell: Boolean(document.querySelector(${selectorLiteral("shell-main")})),
       sidebar: Boolean(document.querySelector(${selectorLiteral("left-panel")})),
       composer: Boolean(document.querySelector(${selectorLiteral("composer-chrome")})),
       main: Boolean(document.querySelector(${selectorLiteral("home-route")})),
+      generic: genericCodexSurface(),
     };
-    const settings = Boolean(document.querySelector(${selectorLiteral("appearance-radio")})) ||
+    const settings = Boolean(document.querySelector(${selectorLiteral("settings-panel")})) ||
+      Boolean(document.querySelector(${selectorLiteral("appearance-radio")})) ||
       Boolean(document.querySelector(${stableTestidLiteral("theme-preview")}));
     return {
-      title: document.title,
-      href: location.href,
       markers,
       codex: location.protocol === 'app:' &&
-        ((markers.shell && markers.sidebar) || settings || markers.main),
+        ((markers.shell && markers.sidebar) || settings || markers.main || markers.generic),
     };
   })()`);
 }
@@ -596,8 +615,8 @@ async function loadSafeCss(assetsRoot) {
     if (!sameFileStat(before, after) || bytes.length !== after.size) {
       throw new Error("Theme Safe CSS changed while being loaded");
     }
-    const { source, validation } = decodeAndValidateSafeCss(bytes);
-    return { path: cssPath, source, stat: after, validation };
+    const { source, runtimeSource, validation } = decodeAndValidateSafeCss(bytes);
+    return { path: cssPath, runtimeSource, source, stat: after, validation };
   } finally {
     await handle.close();
   }
@@ -742,6 +761,7 @@ export async function loadTheme(themeDir) {
       extension,
       imagePath,
       safeCss: safeCss?.source ?? "",
+      safeCssRuntime: safeCss?.runtimeSource ?? "",
       safeCssPath: safeCss?.path ?? null,
       safeCssStatus: safeCss ? "validated" : "none",
       theme,
@@ -770,15 +790,15 @@ function invalidateStaticPayloadAssets() {
   staticPayloadAssets = null;
 }
 
-async function loadPayload(themeDir) {
+export async function loadPayload(themeDir) {
   const startedAt = performance.now();
   const [staticAssets, loaded] = await Promise.all([
     loadStaticPayloadAssets(),
     loadTheme(themeDir),
   ]);
   const { css, template } = staticAssets;
-  const { art, extension, safeCss, safeCssStatus, theme } = loaded;
-  const combinedCss = safeCss ? `${css}\n${safeCss}\n` : css;
+  const { art, extension, safeCssRuntime, safeCssStatus, theme } = loaded;
+  const combinedCss = safeCssRuntime ? `${css}\n${safeCssRuntime}\n` : css;
   const styleRevision = createHash("sha256").update(combinedCss).digest("hex").slice(0, 20);
   const artMetadata = readImageMetadata(art, extension);
   if (!artMetadata) {
@@ -797,13 +817,18 @@ async function loadPayload(themeDir) {
     .update(JSON.stringify(theme))
     .digest("hex")
     .slice(0, 20);
+  // Every replacement value must be supplied as a function. A plain string
+  // replacement would still interpret `$$`, `$&`, `` $` `` and `$'` inside the
+  // JSON, so a theme name that legitimately contains `$` could silently corrupt
+  // or truncate the payload. Function replacements are inserted verbatim.
   const payload = template
-    .replace("__DREAM_SKIN_CSS_JSON__", JSON.stringify(combinedCss))
-    .replace("__DREAM_SKIN_ART_JSON__", JSON.stringify(artDataUrl))
-    .replace("__DREAM_SKIN_THEME_JSON__", JSON.stringify(theme))
-    .replace("__DREAM_SKIN_VERSION_JSON__", JSON.stringify(SKIN_VERSION))
-    .replace("__DREAM_SKIN_STYLE_REVISION_JSON__", JSON.stringify(styleRevision))
-    .replace("__DREAM_SKIN_PAYLOAD_REVISION_JSON__", JSON.stringify(revision));
+    .replace("__DREAM_SKIN_CSS_JSON__", () => JSON.stringify(combinedCss))
+    .replace("__DREAM_SKIN_ART_JSON__", () => JSON.stringify(artDataUrl))
+    .replace("__DREAM_SKIN_THEME_JSON__", () => JSON.stringify(theme))
+    .replace("__DREAM_SKIN_VERSION_JSON__", () => JSON.stringify(SKIN_VERSION))
+    .replace("__DREAM_SKIN_STYLE_REVISION_JSON__", () => JSON.stringify(styleRevision))
+    .replace("__DREAM_SKIN_PAYLOAD_REVISION_JSON__", () => JSON.stringify(revision));
+  assertPayloadIntegrity(payload);
   return {
     imageBytes: art.length,
     payload,
@@ -815,6 +840,27 @@ async function loadPayload(themeDir) {
       staticCacheHit: staticAssets.cacheHit,
     },
   };
+}
+
+// Fail closed before a payload can reach the renderer. Theme display fields are
+// attacker-influenced text, so template substitution is verified structurally
+// instead of trusting any single sanitiser:
+//   1. no placeholder token may survive substitution;
+//   2. the payload must still parse as the standalone expression that
+//      Runtime.evaluate would receive.
+// The second assertion is deliberately generic: it catches any corruption of
+// the template, not only the `$` replacement patterns that motivated it.
+// `new Script` compiles without running the payload, so nothing executes here.
+export function assertPayloadIntegrity(payload) {
+  if (/__DREAM_SKIN_[A-Z0-9_]+_JSON__/.test(payload)) {
+    throw new Error("Payload placeholders were not fully replaced");
+  }
+  try {
+    new Script(payload, { filename: "dream-skin-payload.js" });
+  } catch (error) {
+    throw new Error(`Payload is not a parsable renderer script: ${error.message}`);
+  }
+  return true;
 }
 
 async function applyToSession(session, payload) {
@@ -1061,7 +1107,10 @@ async function verifySession(session, expectedThemeId = null, expectedRevision =
     const homeSignal = homeIndicator ?? document.querySelector(${selectorLiteral("game-source")}) ??
       document.querySelector(${selectorLiteral("home-suggestions")});
     const homeRoute = homeSignal?.closest('[role="main"]') ?? null;
-    const home = document.querySelector(${selectorLiteral("home-route")});
+    // Codex 26.721.x can render the home content before home-icon. Reuse the
+    // already-resolved semantic home container so a healthy home session is
+    // not rejected solely because the stricter home-icon selector is late.
+    const home = document.querySelector(${selectorLiteral("home-route")}) ?? homeRoute;
     const suggestions = home?.querySelector(${selectorLiteral("home-suggestions")}) ?? null;
     const cardButtons = suggestions ? [...suggestions.querySelectorAll('button')] : [];
     const cardBoxes = cardButtons.map(box);
@@ -1103,7 +1152,10 @@ async function verifySession(session, expectedThemeId = null, expectedRevision =
     const shell = box(document.querySelector(${selectorLiteral("shell-main")}));
     const composer = box(document.querySelector(${selectorLiteral("composer-chrome")}));
     const sidebar = box(document.querySelector(${selectorLiteral("left-panel")}));
+    const genericMain = box(document.querySelector('[data-ds-part="main"], [data-ds-part="home"]'));
+    const genericInput = box(document.querySelector('[data-ds-part="composer"]'));
     const settingsBoxes = [
+      box(document.querySelector(${selectorLiteral("settings-panel")})),
       box(document.querySelector(${selectorLiteral("appearance-radio")})),
       box(document.querySelector(${stableTestidLiteral("theme-preview")})),
     ];
@@ -1137,6 +1189,8 @@ async function verifySession(session, expectedThemeId = null, expectedRevision =
       shell,
       composer,
       sidebar,
+      genericMain,
+      genericInput,
       settings,
       viewport: { width: innerWidth, height: innerHeight },
       documentOverflow: {
@@ -1289,7 +1343,7 @@ async function runOneShot(options) {
           loaded?.theme.id ?? null,
           loaded?.revision ?? null,
         );
-      results.push({ targetId: target.id, title: target.title, url: target.url, probe, result });
+      results.push({ targetId: target.id, markers: probe?.markers, result });
       if (operationToken) {
         const passed = options.mode === "remove" ? result === true : result?.pass;
         await presentOperationUi(
@@ -1320,9 +1374,7 @@ async function runOneShot(options) {
       }
       results.push({
         targetId: target.id,
-        title: target.title,
-        url: target.url,
-        probe,
+        markers: probe?.markers,
         error: error.message,
         result: null,
       });
@@ -1356,9 +1408,16 @@ export function earlyPayloadFor(payload, revision) {
       const shell = document.querySelector(${selectorLiteral("shell-main")});
       const sidebar = document.querySelector(${selectorLiteral("left-panel")});
       const main = document.querySelector(${selectorLiteral("home-route")});
-      const settings = document.querySelector(${selectorLiteral("appearance-radio")}) ||
+      const settings = document.querySelector(${selectorLiteral("settings-panel")}) ||
+        document.querySelector(${selectorLiteral("appearance-radio")}) ||
         document.querySelector(${stableTestidLiteral("theme-preview")});
-      return Boolean((shell && sidebar) || settings || main);
+      const genericMain = document.querySelector('main, [role="main"]');
+      const genericInput = document.querySelector('textarea, [contenteditable="true"], [role="textbox"]');
+      const branded = Boolean(document.querySelector(
+        ${stableTestidLiteral("app-shell-header-context-menu-surface")},
+      ));
+      return Boolean((shell && sidebar) || settings || main ||
+        (genericMain && genericInput && branded));
     };
     const install = () => {
       if (window[generationKey] !== generation) { stop(); return true; }
@@ -1974,7 +2033,7 @@ async function runWatch(options) {
               session, record.operationToken, "success", `已应用「${current.theme.name}」`,
             );
           }
-          console.log(`[dream-skin] injected verified ChatGPT target ${target.id} (${target.title || target.url})`);
+          console.log(`[dream-skin] injected verified ChatGPT target ${target.id}`);
         } catch (error) {
           const recoveryStillCurrent = recoveryOperation && !activeOperation
             && pauseRecovery?.token === recoveryOperation.token;
@@ -2036,9 +2095,14 @@ if (path.resolve(process.argv[1] || "") === path.resolve(scriptPath)) {
     const options = parseArgs(process.argv.slice(2));
     if (options.mode === "check") {
       const loaded = await loadPayload(options.themeDir);
+      // loadPayload already fails closed, but every installer, importer and
+      // theme switch gates on this command, so the guard is re-asserted at the
+      // CLI boundary rather than being an internal implementation detail.
+      assertPayloadIntegrity(loaded.payload);
       console.log(JSON.stringify({
         pass: true,
         version: SKIN_VERSION,
+        payloadIntegrity: "verified",
         themeId: loaded.theme.id,
         themeName: loaded.theme.name,
         imageBytes: loaded.imageBytes,

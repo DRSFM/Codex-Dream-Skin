@@ -497,6 +497,44 @@ function Invoke-DreamSkinNative {
   }
 }
 
+function Import-DreamSkinPowerShellSecurityModule {
+  $command = Get-Command Get-AuthenticodeSignature -CommandType Cmdlet -ErrorAction SilentlyContinue
+  if ($command) { return }
+  try {
+    Import-Module Microsoft.PowerShell.Security -ErrorAction Stop
+  } catch {
+    $modulePath = Join-Path $PSHOME 'Modules\Microsoft.PowerShell.Security\Microsoft.PowerShell.Security.psd1'
+    if (-not (Test-Path -LiteralPath $modulePath -PathType Leaf)) {
+      throw "PowerShell security module is unavailable: $($_.Exception.Message)"
+    }
+    Import-Module $modulePath -ErrorAction Stop
+  }
+  $command = Get-Command Get-AuthenticodeSignature -CommandType Cmdlet -ErrorAction SilentlyContinue
+  if (-not $command) {
+    throw 'PowerShell security module loaded, but Get-AuthenticodeSignature is unavailable.'
+  }
+}
+
+function Assert-DreamSkinTrustedNodeImage {
+  param([Parameter(Mandatory = $true)][string]$Path)
+
+  # Runs BEFORE the binary is ever executed. Get-DreamSkinValidatedNodeRuntime
+  # learns the version by running `node -p`, so any authenticity check placed
+  # after that point would already have executed attacker-controlled code.
+  Import-DreamSkinPowerShellSecurityModule
+  $signature = Get-AuthenticodeSignature -LiteralPath $Path -ErrorAction Stop
+  if ("$($signature.Status)" -ine 'Valid') {
+    throw "The Node.js runtime is not validly signed: $Path ($($signature.Status))."
+  }
+  $subject = "$($signature.SignerCertificate.Subject)"
+  # Publisher names observed on official Node.js builds. The subject is echoed
+  # in the failure so an unexpected-but-legitimate publisher can be identified
+  # and added deliberately, rather than the check being loosened blindly.
+  if ($subject -notmatch '(?i)O=("?)(OpenJS Foundation|Node\.js Foundation|Microsoft Corporation|GitHub, Inc\.)') {
+    throw "The Node.js runtime is signed by an unexpected publisher: $subject"
+  }
+}
+
 function Get-DreamSkinValidatedNodeRuntime {
   param(
     [Parameter(Mandatory = $true)][string]$Path,
@@ -506,6 +544,7 @@ function Get-DreamSkinValidatedNodeRuntime {
   if (-not (Test-Path -LiteralPath $candidate -PathType Leaf)) {
     throw "Node.js runtime does not exist: $candidate"
   }
+  Assert-DreamSkinTrustedNodeImage -Path $candidate
   $versionProbe = Invoke-DreamSkinNative -FilePath $candidate -ArgumentList @('-p', 'process.versions.node') -DiscardStderr
   $version = ($versionProbe.Output -join '').Trim()
   if ($versionProbe.ExitCode -ne 0 -or -not $version) { throw 'The Node.js runtime could not be validated.' }
@@ -524,10 +563,18 @@ function Get-DreamSkinValidatedNodeRuntime {
 function Get-DreamSkinNodeRuntime {
   param([int]$MinimumMajor = 22)
 
-  if ($env:CODEX_DREAM_SKIN_NODE) {
-    return Get-DreamSkinValidatedNodeRuntime -Path $env:CODEX_DREAM_SKIN_NODE -MinimumMajor $MinimumMajor
-  }
-
+  # The runtime that runs Safe CSS validation, theme-package validation, image
+  # metadata limits and the injector must not be redirectable: anyone able to
+  # write HKCU\Environment (no admin needed) could otherwise point every
+  # validator at their own node.exe and bypass all of them at once. So there is
+  # no environment-variable override -- macOS pins the same way, see
+  # require_signed_node_runtime in macos/scripts/common-macos.sh.
+  #
+  # An installed engine always ships runtime\node\node.exe and must use it. The
+  # repository source tree has no bundled copy (the installer downloads it), so
+  # running the suite from source falls back to PATH -- but that candidate goes
+  # through the exact same Authenticode gate, so a hostile node.exe on PATH is
+  # rejected before it is ever executed.
   $runtimeRoot = Split-Path -Parent $PSScriptRoot
   $bundledNode = Join-Path $runtimeRoot 'runtime\node\node.exe'
   if (Test-Path -LiteralPath $bundledNode -PathType Leaf) {
@@ -537,7 +584,7 @@ function Get-DreamSkinNodeRuntime {
   $command = Get-Command node.exe -ErrorAction SilentlyContinue
   if (-not $command) { $command = Get-Command node -ErrorAction SilentlyContinue }
   if (-not $command) {
-    throw "Bundled Node.js is missing and Node.js $MinimumMajor or newer was not found in PATH."
+    throw "The bundled Node.js runtime is missing ($bundledNode) and Node.js $MinimumMajor or newer was not found in PATH."
   }
   return Get-DreamSkinValidatedNodeRuntime -Path $command.Source -MinimumMajor $MinimumMajor
 }
@@ -1105,8 +1152,13 @@ function Stop-DreamSkinRecordedInjector {
   param([AllowNull()][object]$State)
   if ($null -eq $State -or -not $State.injectorPid) { return $true }
   $processId = [int]$State.injectorPid
+  $processHandle = Get-Process -Id $processId -ErrorAction SilentlyContinue
+  if (-not $processHandle) { return $true }
   $process = Get-CimInstance Win32_Process -Filter "ProcessId = $processId" -ErrorAction SilentlyContinue
-  if (-not $process) { return $true }
+  if (-not $process) {
+    if ($processHandle.HasExited) { return $true }
+    throw "The recorded injector PID $processId is running, but its identity cannot be inspected. State was preserved."
+  }
 
   $expectedInjector = if ($State.injectorPath) {
     "$($State.injectorPath)"
@@ -1136,7 +1188,12 @@ function Stop-DreamSkinRecordedInjector {
     $browserPattern = '(?:^|\s)(?i:--browser-id)(?:=|\s+)' + [regex]::Escape("$($State.browserId)") + '(?=$|\s)'
     $injectorMatches = $injectorMatches -and [regex]::IsMatch($commandLine, $browserPattern)
   }
-  $startedAt = Get-DreamSkinProcessStartedAt -ProcessId $processId
+  try {
+    $startedAt = $processHandle.StartTime.ToUniversalTime().ToString('o')
+  } catch {
+    if ($processHandle.HasExited) { return $true }
+    throw "The recorded injector PID $processId is running, but its start time cannot be inspected. State was preserved."
+  }
   $startMatches = -not $State.injectorStartedAt -or $startedAt -eq "$($State.injectorStartedAt)"
   $identityMatches = [bool]($isNodeExecutable -and $nodeMatches -and $injectorMatches -and $startMatches)
 
@@ -1144,9 +1201,9 @@ function Stop-DreamSkinRecordedInjector {
     throw "The recorded injector PID $processId is running, but its visible identity does not match the saved Dream Skin process. State was preserved."
   }
 
-  Stop-Process -Id $processId -Force -ErrorAction Stop
-  try { Wait-Process -Id $processId -Timeout 5 -ErrorAction Stop } catch {}
-  if (Get-Process -Id $processId -ErrorAction SilentlyContinue) {
+  Stop-Process -InputObject $processHandle -Force -ErrorAction Stop
+  [void]$processHandle.WaitForExit(15000)
+  if (-not $processHandle.HasExited) {
     throw "The recorded Dream Skin injector did not stop: PID $processId"
   }
   return $true
@@ -1232,4 +1289,17 @@ function Confirm-DreamSkinRestart {
   param([string]$Message)
   $shell = New-Object -ComObject WScript.Shell
   return $shell.Popup($Message, 0, 'Codex Dream Skin', 52) -eq 6
+}
+
+function Invoke-DreamSkinCodexWindowActivation {
+  param([Parameter(Mandatory = $true)][object]$Codex)
+  $processes = @(Get-DreamSkinCodexProcesses -Codex $Codex)
+  if ($processes.Count -eq 0) { return $false }
+  $shell = New-Object -ComObject WScript.Shell
+  foreach ($process in $processes) {
+    try {
+      if ($shell.AppActivate([int]$process.ProcessId)) { return $true }
+    } catch {}
+  }
+  return $false
 }
