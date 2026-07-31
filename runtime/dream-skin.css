@@ -1279,6 +1279,30 @@ html[data-dream-skin="active"] button[class~="bg-token-foreground"] {
 html[data-dream-skin="active"] article,
 html[data-dream-skin="active"] [data-ds-part="message"] { border-radius: 16px; }
 
+/* Local chrome policy: keep Codex's native controls and copy. The upstream
+   background, panels, colors, and compatibility layer stay intact; only the
+   decorative pseudo-copy highlighted in the local reference is suppressed. */
+html[data-dream-skin="active"]
+  __DREAM_SELECTOR_SHELL_MAIN__:not(:has(__DREAM_SELECTOR_HOME_ROUTE_CSS__)) > __DREAM_SELECTOR_HEADER_TINT__::before,
+html[data-dream-skin="active"]
+  __DREAM_SELECTOR_SHELL_MAIN__:not(:has(__DREAM_SELECTOR_HOME_ROUTE_CSS__)) > __DREAM_SELECTOR_HEADER_TINT__::after,
+html[data-dream-skin="active"]
+  __DREAM_SELECTOR_SHELL_MAIN__:has(__DREAM_SELECTOR_HOME_ROUTE_CSS__)::after {
+  content: none !important;
+  display: none !important;
+}
+
+html[data-dream-skin="active"] __DREAM_SELECTOR_LEFT_PANEL__ button[aria-label^="切换模式"],
+html[data-dream-skin="active"] __DREAM_SELECTOR_LEFT_PANEL__ button[aria-label^="Toggle mode"] {
+  display: none !important;
+}
+
+html[data-dream-skin="active"] __DREAM_SELECTOR_LEFT_PANEL__ button[aria-label^="切换模式"]::after,
+html[data-dream-skin="active"] __DREAM_SELECTOR_LEFT_PANEL__ button[aria-label^="Toggle mode"]::after {
+  content: none !important;
+  display: none !important;
+}
+
 @media (max-width: 1120px) {
   html[data-dream-skin="active"]
     __DREAM_SELECTOR_SHELL_MAIN__:has(__DREAM_SELECTOR_HOME_ROUTE_CSS__)::after { content: none; }
