@@ -893,6 +893,27 @@ try {
     if ($newProcesses.Count -ne 1 -or $newProcesses[0].ProcessId -ne 20) {
       throw 'Launch rollback did not preserve the exact pre-launch Codex PID set.'
     }
+    $script:dreamSkinPackageLaunchCount = 0
+    Set-Item 'function:Start-DreamSkinCodex' -Value {
+      param($Codex, $Arguments)
+      $script:dreamSkinPackageLaunchCount += 1
+      return 101
+    }
+    Set-Item 'function:Start-DreamSkinCodexDirect' -Value { param($Codex, $Arguments) return 202 }
+    $isolatedLaunch = Start-DreamSkinCodexForDebugging -Codex $fakeInstall `
+      -Arguments @('--remote-debugging-port=9336', '--user-data-dir=C:\Users\Test\.apicodex-desktop\deepseek') `
+      -Port 9336 -PreserveProcessIds @(10, 20, 30)
+    if ($script:dreamSkinPackageLaunchCount -ne 0 -or $isolatedLaunch.ProcessId -ne 202 -or
+      $isolatedLaunch.Strategy -cne 'direct-store-executable') {
+      throw 'An isolated API profile was routed through single-instance package activation.'
+    }
+    $normalIsolatedPid = & $originalLauncherFunctions['Start-DreamSkinCodex'] `
+      -Codex $fakeInstall -Arguments @('--user-data-dir=C:\Users\Test\.apicodex-desktop\deepseek')
+    if ($normalIsolatedPid -ne 202) {
+      throw 'An isolated API profile rollback was routed through single-instance package activation.'
+    }
+
+    Set-Item 'function:Start-DreamSkinCodex' -Value { param($Codex, $Arguments) return 101 }
     $compatibleLaunch = Start-DreamSkinCodexForDebugging -Codex $fakeInstall `
       -Arguments @('--remote-debugging-port=9335') -Port 9335 -PreserveProcessIds @()
     if ($compatibleLaunch.ProcessId -ne 101 -or $compatibleLaunch.Strategy -cne 'package-activation') {
@@ -965,6 +986,7 @@ try {
       Set-Item ("function:$functionName") -Value $originalLauncherFunctions[$functionName]
     }
     Remove-Variable -Name dreamSkinDebugStatusCall -Scope Script -ErrorAction SilentlyContinue
+    Remove-Variable -Name dreamSkinPackageLaunchCount -Scope Script -ErrorAction SilentlyContinue
   }
   $fakeManifest.Package.Applications.Application[1].Id = 'Invalid App'
   if ($null -ne (ConvertTo-DreamSkinCodexInstall -Package $fakePackage -Manifest $fakeManifest)) {
@@ -1466,6 +1488,9 @@ try {
   $imageMetadataTest = Invoke-DreamSkinNative -FilePath $node.Path -ArgumentList @(
     (Join-Path $PSScriptRoot 'image-metadata.test.mjs'))
   if ($imageMetadataTest.ExitCode -ne 0) { throw 'Image metadata regression test failed.' }
+  $nativeChromeTest = Invoke-DreamSkinNative -FilePath $node.Path -ArgumentList @(
+    (Join-Path $PSScriptRoot 'local-native-chrome.test.mjs'))
+  if ($nativeChromeTest.ExitCode -ne 0) { throw 'Local native-chrome regression test failed.' }
 
   Write-Host 'PASS: config transactions, restore scoping, state safety, argument quoting, and loopback CDP validation.'
 } finally {
