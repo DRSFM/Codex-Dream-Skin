@@ -1176,6 +1176,30 @@ html[data-dream-skin="active"] button[class~="bg-token-foreground"] {
 html[data-dream-skin="active"] article,
 html[data-dream-skin="active"] [data-message-author-role] { border-radius: 16px; }
 
+/* Local chrome policy: keep Codex's native controls and copy. The upstream
+   background, panels, colors, and compatibility layer stay intact; only the
+   decorative pseudo-copy highlighted in the local reference is suppressed. */
+html[data-dream-skin="active"]
+  main.main-surface:not(:has([role="main"])) > header.app-header-tint::before,
+html[data-dream-skin="active"]
+  main.main-surface:not(:has([role="main"])) > header.app-header-tint::after,
+html[data-dream-skin="active"]
+  main.main-surface:has([role="main"])::after {
+  content: none !important;
+  display: none !important;
+}
+
+html[data-dream-skin="active"] aside.app-shell-left-panel button[aria-label^="切换模式"],
+html[data-dream-skin="active"] aside.app-shell-left-panel button[aria-label^="Toggle mode"] {
+  display: none !important;
+}
+
+html[data-dream-skin="active"] aside.app-shell-left-panel button[aria-label^="切换模式"]::after,
+html[data-dream-skin="active"] aside.app-shell-left-panel button[aria-label^="Toggle mode"]::after {
+  content: none !important;
+  display: none !important;
+}
+
 @media (max-width: 1120px) {
   html[data-dream-skin="active"]
     main.main-surface:has([role="main"])::after { content: none; }
