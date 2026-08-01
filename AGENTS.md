@@ -76,6 +76,6 @@
 
 ### 2026-08-01：合并 ApiCodex 多实例启动器
 
-- 修改：将 `codex/apicodex-unified-tray` 的 WPF 启动器、托盘和实例管理能力整合到最新 Windows 受管运行时。
-- 原因：让远端 `main` 直接包含截图所示的多实例控制台，同时保留主分支后续加入的主题包、安全校验和安装器机制。
-- 验证：合并完成后运行 Windows 静态回归与 WPF 启动器测试。
+- 修改：将 `codex/apicodex-unified-tray` 的 WPF 启动器、托盘和实例管理能力整合到最新 Windows 受管运行时；后续同步上游 v1.5.11/Codex 26.727 renderer 合同，并让包含 `--user-data-dir` 的隔离实例跳过 AppUserModelId、直接运行经过验证的 Store 可执行文件。失败回滚同时按精确 profile 限定。
+- 原因：让远端 `main` 直接包含截图所示的多实例控制台，保留主题包、安全校验和安装器机制，并避免 Store 单实例激活静默丢失隔离 profile 与 CDP 参数或回滚误伤并发实例。
+- 验证：PowerShell 7 完整 Windows 套件、安装器静态合同、PowerShell BOM 策略、runtime 同步、20 个 Windows Node 回归、双端 payload 检查及 WPF 测试 6/6 本地通过；合并前继续要求 PR exact-head 四项 CI 全绿。

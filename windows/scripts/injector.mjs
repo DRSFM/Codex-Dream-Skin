@@ -39,7 +39,7 @@ const stableTestidLiteral = (testid) => {
   }
   return JSON.stringify(`[data-testid="${testid}"]`);
 };
-const SKIN_VERSION = "1.5.5";
+const SKIN_VERSION = "1.5.11";
 const MAX_ART_BYTES = 10 * 1024 * 1024;
 const MAX_SAFE_CSS_BYTES = 256 * 1024;
 const STRONG_THEME_AUDIT_MS = 30000;
@@ -300,8 +300,14 @@ class CdpSession {
       if (!waiter) return;
       clearTimeout(waiter.timeout);
       this.pending.delete(message.id);
-      if (message.error) waiter.reject(new Error(`${message.error.message} (${message.error.code})`));
-      else waiter.resolve(message.result);
+      if (message.error) {
+        // Keep the numeric CDP code on the rejection: classifyNativeWindowError
+        // reads it directly instead of re-parsing the human-readable message,
+        // which Codex builds are free to reword at any time.
+        const error = new Error(`${message.error.message} (${message.error.code})`);
+        error.cdpCode = message.error.code;
+        waiter.reject(error);
+      } else waiter.resolve(message.result);
       return;
     }
     for (const listener of this.listeners.get(message.method) ?? []) listener(message.params ?? {});
@@ -497,8 +503,8 @@ async function loadSafeCss(themeRoot) {
     if (!sameFileStat(before, after) || bytes.length !== after.size) {
       throw new Error("Theme Safe CSS changed while being loaded");
     }
-    const { source, validation } = decodeAndValidateSafeCss(bytes);
-    return { path: cssPath, source, stat: after, validation };
+    const { source, runtimeSource, validation } = decodeAndValidateSafeCss(bytes);
+    return { path: cssPath, runtimeSource, source, stat: after, validation };
   } finally {
     await handle.close();
   }
@@ -529,24 +535,17 @@ export async function loadTheme(themeDir) {
     throw new Error("Theme image cannot escape through a link or junction");
   }
   const art = raw.art && typeof raw.art === "object" && !Array.isArray(raw.art) ? raw.art : {};
-  const palette = raw.palette && typeof raw.palette === "object" && !Array.isArray(raw.palette)
-    ? raw.palette : {};
   const rawColors = raw.colors && typeof raw.colors === "object" && !Array.isArray(raw.colors)
     ? raw.colors : null;
   const colorKeys = [
     "background", "panel", "panelAlt", "accent", "accentAlt", "secondary",
     "highlight", "text", "muted", "line",
   ];
-  const paletteAccent = typeof palette.accent === "string" && palette.accent.trim()
-    ? palette.accent.trim() : "";
-  if (paletteAccent && !/^(?:#[\da-f]{3,8}|(?:rgb|hsl|oklch|oklab)\([^;{}]{1,96}\))$/i.test(paletteAccent)) {
-    throw new Error("palette.accent is not a supported CSS color");
-  }
   const colors = {
     background: normalizeThemeColor(rawColors?.background, "#071116"),
     panel: normalizeThemeColor(rawColors?.panel, "#0b1a20"),
     panelAlt: normalizeThemeColor(rawColors?.panelAlt, "#10272c"),
-    accent: normalizeThemeColor(rawColors?.accent, normalizeThemeColor(paletteAccent, "#7cff46")),
+    accent: normalizeThemeColor(rawColors?.accent, "#7cff46"),
     accentAlt: normalizeThemeColor(rawColors?.accentAlt, "#b8ff3d"),
     secondary: normalizeThemeColor(rawColors?.secondary, "#36d7e8"),
     highlight: normalizeThemeColor(rawColors?.highlight, "#642a8c"),
@@ -571,14 +570,10 @@ export async function loadTheme(themeDir) {
       safeArea: normalizedChoice(art.safeArea, "art.safeArea", THEME_CHOICES.safeArea, "auto"),
       taskMode: normalizedChoice(art.taskMode, "art.taskMode", THEME_CHOICES.taskMode, "auto"),
     },
-    colorMode: rawColors ? "explicit" : (paletteAccent ? "explicit" : "auto"),
-    explicitColorKeys: rawColors
-      ? colorKeys.filter((key) => Object.hasOwn(rawColors, key))
-      : (paletteAccent ? ["accent"] : []),
+    colorMode: rawColors ? "explicit" : "auto",
+    explicitColorKeys: rawColors ? colorKeys.filter((key) => Object.hasOwn(rawColors, key)) : [],
     colors,
-    palette: {},
   };
-  if (paletteAccent) theme.palette.accent = paletteAccent;
   const [themeStat, imageStat, safeCss] = await Promise.all([
     fs.stat(themePath),
     fs.stat(realImagePath),
@@ -611,6 +606,7 @@ export async function loadTheme(themeDir) {
     imagePath: realImagePath,
     imageBytes,
     safeCss: safeCss?.source ?? "",
+    safeCssRuntime: safeCss?.runtimeSource ?? "",
     safeCssPath: safeCss?.path ?? null,
     safeCssStatus: safeCss ? "validated" : "none",
     fingerprint,
@@ -619,13 +615,14 @@ export async function loadTheme(themeDir) {
   };
 }
 
-async function loadPayload(themeDir = path.join(root, "assets"), candidateTheme = null) {
+export async function loadPayload(themeDir = path.join(root, "assets"), candidateTheme = null) {
   const loadedTheme = candidateTheme ?? await loadTheme(themeDir);
   const [css, template] = await Promise.all([
     fs.readFile(path.join(root, "assets", "dream-skin.css"), "utf8"),
     fs.readFile(path.join(root, "assets", "renderer-inject.js"), "utf8"),
   ]);
-  const combinedCss = loadedTheme.safeCss ? `${css}\n${loadedTheme.safeCss}\n` : css;
+  const combinedCss = loadedTheme.safeCssRuntime
+    ? `${css}\n${loadedTheme.safeCssRuntime}\n` : css;
   const extension = path.extname(loadedTheme.imagePath).toLowerCase();
   const mime = extension === ".jpg" || extension === ".jpeg" ? "image/jpeg"
     : extension === ".webp" ? "image/webp" : "image/png";
@@ -640,13 +637,32 @@ async function loadPayload(themeDir = path.join(root, "assets"), candidateTheme 
     .update(JSON.stringify(loadedTheme.theme))
     .digest("hex")
     .slice(0, 20);
+  // Every replacement uses a function so String.prototype.replace never
+  // interprets $$, $&, $` or $' inside the substituted JSON. Theme text is
+  // user-controlled (theme.json legitimately allows "$"), and a literal-string
+  // replacement would splice the template source back into the payload -- a
+  // stray "$`" produced a SyntaxError, while "$&"/"$$" silently corrupted the
+  // theme name.
   const payload = template
-    .replace("__DREAM_SKIN_CSS_JSON__", JSON.stringify(combinedCss))
-    .replace("__DREAM_SKIN_ART_JSON__", JSON.stringify(artDataUrl))
-    .replace("__DREAM_SKIN_THEME_JSON__", JSON.stringify(loadedTheme.theme))
-    .replace("__DREAM_SKIN_VERSION_JSON__", JSON.stringify(SKIN_VERSION))
-    .replace("__DREAM_SKIN_STYLE_REVISION_JSON__", JSON.stringify(styleRevision))
-    .replace("__DREAM_SKIN_PAYLOAD_REVISION_JSON__", JSON.stringify(revision));
+    .replace("__DREAM_SKIN_CSS_JSON__", () => JSON.stringify(combinedCss))
+    .replace("__DREAM_SKIN_ART_JSON__", () => JSON.stringify(artDataUrl))
+    .replace("__DREAM_SKIN_THEME_JSON__", () => JSON.stringify(loadedTheme.theme))
+    .replace("__DREAM_SKIN_VERSION_JSON__", () => JSON.stringify(SKIN_VERSION))
+    .replace("__DREAM_SKIN_STYLE_REVISION_JSON__", () => JSON.stringify(styleRevision))
+    .replace("__DREAM_SKIN_PAYLOAD_REVISION_JSON__", () => JSON.stringify(revision));
+  // Defence in depth for every caller, not just --check-payload: a template
+  // splice leaves an unreplaced placeholder token behind and usually breaks the
+  // syntax outright, so refuse to hand a corrupted script to the renderer.
+  if (/__DREAM_SKIN_[A-Z0-9_]+_JSON__/.test(payload)) {
+    throw new Error("Payload placeholders were not fully replaced");
+  }
+  try {
+    // Compile-only: this parses the payload and discards the result. It never
+    // runs the renderer script here.
+    new Function(payload);
+  } catch (error) {
+    throw new Error(`Payload failed to parse as JavaScript: ${error.message}`);
+  }
   const { imageBytes: _imageBytes, ...themeState } = loadedTheme;
   return { ...themeState, payload, revision };
 }
@@ -676,18 +692,29 @@ async function readThemeSourceStamp(loadedTheme) {
 
 async function probeSession(session) {
   return session.evaluate(`(() => {
+    const genericCodexSurface = () => {
+      if (location.protocol !== 'app:') return false;
+      const main = document.querySelector('main, [role="main"]');
+      const input = document.querySelector('textarea, [contenteditable="true"], [role="textbox"]');
+      const branded = Boolean(document.querySelector(
+        ${stableTestidLiteral("app-shell-header-context-menu-surface")},
+      ));
+      return Boolean(main && input && branded);
+    };
     const markers = {
       shell: Boolean(document.querySelector(${selectorLiteral("shell-main")})),
       sidebar: Boolean(document.querySelector(${selectorLiteral("left-panel")})),
       composer: Boolean(document.querySelector(${selectorLiteral("composer-chrome")})),
       main: Boolean(document.querySelector(${selectorLiteral("home-route")})),
+      generic: genericCodexSurface(),
     };
-    const settings = Boolean(document.querySelector(${selectorLiteral("appearance-radio")})) ||
+    const settings = Boolean(document.querySelector(${selectorLiteral("settings-panel")})) ||
+      Boolean(document.querySelector(${selectorLiteral("appearance-radio")})) ||
       Boolean(document.querySelector(${stableTestidLiteral("theme-preview")}));
     return {
       markers,
       codex: location.protocol === 'app:' &&
-        ((markers.shell && markers.sidebar) || settings || markers.main),
+        ((markers.shell && markers.sidebar) || settings || markers.main || markers.generic),
     };
   })()`);
 }
@@ -712,12 +739,31 @@ async function connectTarget(target, port) {
 }
 
 function unavailableNativeWindow(error) {
-  const detail = String(error?.message ?? "");
+  const message = String(error?.message ?? "");
+  const cdpCode = Number(error?.cdpCode);
+  const withoutCode = message.replace(/\s*\(-?\d+\)\s*$/, "").trim();
+  const domainUnsupported = cdpCode === -32601
+    || /\(-32601\)\s*$/.test(message)
+    || /^method(?: ['"]Browser\.getWindowForTarget['"])? not found$/i.test(withoutCode)
+    || /^['"]?Browser\.getWindowForTarget['"]? (?:wasn't|was not) found$/i.test(withoutCode);
+  // Codex 26.721.x (Chrome/150) answers -32000 "Browser window not found" for
+  // the app's real, focused, on-screen window -- verified live via CDP: the
+  // error is identical before and after actually activating the window, while
+  // documentVisibility correctly flips hidden -> visible. The domain exists but
+  // this build never resolves a window for our target, so -32000 is exactly as
+  // uninformative here as -32601 elsewhere. Treat both the same way and lean on
+  // documentVisible, which stays a hard requirement in windowPass below, as the
+  // real visibility signal. Matches macOS classifyNativeWindowError. See #256.
+  const windowNotFound = cdpCode === -32000
+    || /\(-32000\)\s*$/.test(message)
+    || /^browser window not found$/i.test(withoutCode)
+    || /^no window with given target found$/i.test(withoutCode);
   return {
     pass: false,
     bound: false,
-    reason: /\(-32601\)$/.test(detail)
-      ? "browser-window-api-unavailable"
+    unsupported: domainUnsupported || windowNotFound,
+    reason: domainUnsupported ? "browser-window-api-unavailable"
+      : windowNotFound ? "browser-window-not-found"
       : "target-window-unavailable",
   };
 }
@@ -814,9 +860,16 @@ export function earlyPayloadFor(payload, revision) {
       const shell = document.querySelector(${selectorLiteral("shell-main")});
       const sidebar = document.querySelector(${selectorLiteral("left-panel")});
       const main = document.querySelector(${selectorLiteral("home-route")});
-      const settings = document.querySelector(${selectorLiteral("appearance-radio")}) ||
+      const settings = document.querySelector(${selectorLiteral("settings-panel")}) ||
+        document.querySelector(${selectorLiteral("appearance-radio")}) ||
         document.querySelector(${stableTestidLiteral("theme-preview")});
-      return Boolean((shell && sidebar) || settings || main);
+      const genericMain = document.querySelector('main, [role="main"]');
+      const genericInput = document.querySelector('textarea, [contenteditable="true"], [role="textbox"]');
+      const branded = Boolean(document.querySelector(
+        ${stableTestidLiteral("app-shell-header-context-menu-surface")},
+      ));
+      return Boolean((shell && sidebar) || settings || main ||
+        (genericMain && genericInput && branded));
     };
     const install = () => {
       if (window[generationKey] !== generation) { stop(); return true; }
@@ -1101,11 +1154,36 @@ export async function verifySession(
         visible: Boolean(node.isConnected !== false && cssVisible && intersectsViewport),
       };
     };
-    const home = document.querySelector(${selectorLiteral("home-route")});
-    const settingsAnchor = document.querySelector(${selectorLiteral("appearance-radio")}) ||
-      document.querySelector(${stableTestidLiteral("theme-preview")});
+    const homeIndicator = document.querySelector(${selectorLiteral("home-icon")});
+    const homeSignal = homeIndicator ?? document.querySelector(${selectorLiteral("game-source")}) ??
+      document.querySelector(${selectorLiteral("home-suggestions")});
+    const homeRoute = homeSignal?.closest('[role="main"]') ?? null;
+    // Codex 26.721.x can render the home content before home-icon. Reuse the
+    // already-resolved semantic home container so a healthy home session is
+    // not rejected solely because the stricter home-icon selector is late.
+    const home = document.querySelector(${selectorLiteral("home-route")}) ?? homeRoute;
     const suggestions = home?.querySelector(${selectorLiteral("home-suggestions")}) ?? null;
-    const cards = suggestions ? [...suggestions.querySelectorAll('button')].map(box) : [];
+    const cardButtons = suggestions ? [...suggestions.querySelectorAll('button')] : [];
+    const cards = cardButtons.map(box);
+    const visibleCards = cards.filter((item) => item?.visible);
+    const suggestionLabels = cardButtons.flatMap((button) => {
+      const expectedColor = getComputedStyle(button).color;
+      return [...button.querySelectorAll('*')]
+        .filter((node) => [...node.childNodes].some((child) =>
+          child.nodeType === 3 && child.textContent.trim()))
+        .map((node) => ({
+          ...box(node),
+          text: String(node.textContent ?? "").trim().slice(0, 80),
+          color: getComputedStyle(node).color,
+          expectedColor,
+        }));
+    });
+    const visibleSuggestionLabels = suggestionLabels.filter((item) => item?.visible);
+    const suggestionLabelColorsMatch = visibleSuggestionLabels.every((item) =>
+      item.color === item.expectedColor);
+    const settingsAnchor = document.querySelector(${selectorLiteral("settings-panel")}) ||
+      document.querySelector(${selectorLiteral("appearance-radio")}) ||
+      document.querySelector(${stableTestidLiteral("theme-preview")});
     const runtime = window.__CODEX_DREAM_SKIN_STATE__;
     const adopted = runtime?.styleMode === 'adopted' &&
       [...document.adoptedStyleSheets].includes(runtime.styleSheet);
@@ -1147,9 +1225,14 @@ export async function verifySession(
       settingsAnchor: box(settingsAnchor),
       hero,
       cards,
+      visibleCardCount: visibleCards.length,
+      suggestionLabels,
+      suggestionLabelColorsMatch,
       composer: box(document.querySelector(${selectorLiteral("composer-chrome")})),
       shell: box(document.querySelector(${selectorLiteral("shell-main")})),
       sidebar: box(document.querySelector(${selectorLiteral("left-panel")})),
+      genericMain: box(document.querySelector('[data-ds-part="main"], [data-ds-part="home"]')),
+      genericInput: box(document.querySelector('[data-ds-part="composer"]')),
       nativeWindow: ${JSON.stringify(nativeWindow)},
       documentVisibility: document.visibilityState ?? null,
       documentHidden: document.hidden === true,
@@ -1159,27 +1242,52 @@ export async function verifySession(
         y: document.documentElement.scrollHeight > document.documentElement.clientHeight,
       },
     };
-    const l0AnchorPass = Boolean(result.settingsAnchor?.visible || result.homeSurface?.visible);
-    const structurePass = result.scope?.level === 'L0'
-      ? l0AnchorPass
-      : result.scope?.level === 'L1' && Boolean(result.shell?.visible && result.sidebar?.visible);
+    const homeScope = result.scope?.baseState === 'home' || result.homePresent;
+    const l1ScopePass = result.scope?.level === 'L1' &&
+      Array.isArray(result.scope?.missingL1) && result.scope.missingL1.length === 0;
+    const genericStructurePass = l1ScopePass && Boolean(result.genericMain?.visible) &&
+      Boolean(result.genericInput?.visible || (homeScope && result.homeSurface?.visible));
+    const l0StructurePass = result.scope?.level === 'L0' &&
+      result.scope?.baseState === 'settings' && Boolean(result.settingsAnchor?.visible);
+    const structurePass = l0StructurePass || (l1ScopePass &&
+      (Boolean(result.shell?.visible && result.sidebar?.visible) || genericStructurePass));
     const documentPass = result.documentVisibility === 'visible' && !result.documentHidden;
     const viewportPass = result.viewport.width >= ${MIN_RENDERER_VIEWPORT_WIDTH} &&
       result.viewport.height >= ${MIN_RENDERER_VIEWPORT_HEIGHT};
-    const windowPass = result.nativeWindow?.pass === true;
+    const nativeWindowPass = result.nativeWindow?.pass === true;
+    // Codex 26.721.x (Chrome/150) cannot resolve a native window for our target
+    // even when that window is real, focused and on-screen (-32000), and older
+    // builds omit the Browser domain outright (-32601). The injector classifies
+    // both as unsupported; in that case fall back to the renderer's own
+    // visibility evidence instead of failing every install. documentPass and
+    // viewportPass below stay hard requirements, so a genuinely hidden or
+    // collapsed window still fails closed. Mirrors the macOS
+    // assessRendererVerification fallbackWindowPass. See #256.
+    const fallbackWindowPass = result.nativeWindow?.unsupported === true;
+    const windowPass = nativeWindowPass || fallbackWindowPass;
     const expectedThemeId = ${JSON.stringify(expectedThemeId)};
     const expectedRevision = ${JSON.stringify(expectedRevision)};
     const payloadPass = (!expectedThemeId || result.themeId === expectedThemeId) &&
       (!expectedRevision || result.revision === expectedRevision);
     result.expectedThemeId = expectedThemeId;
     result.expectedRevision = expectedRevision;
-    result.readiness = { windowPass, documentPass, viewportPass, structurePass };
+    result.readiness = {
+      windowPass, documentPass, viewportPass, structurePass,
+      nativeWindowPass, fallbackWindowPass,
+    };
+    const homePass = !homeScope || (
+      result.homePresent && Boolean(result.homeSurface?.visible) &&
+      ((result.hero?.visible && result.hero.width >= 280 && result.hero.height >= 120) ||
+        Boolean(result.genericMain?.visible)) &&
+      (!result.suggestionsPresent || result.visibleCardCount === 0 || (
+        result.suggestionLabels.filter((item) => item?.visible).length >= result.visibleCardCount &&
+        result.suggestionLabelColorsMatch
+      ))
+    );
     result.pass = result.installed && result.version === result.expectedVersion &&
       result.stylePresent && result.businessClassPollution === 0 && windowPass &&
       documentPass && viewportPass && structurePass &&
-      payloadPass &&
-      (!result.homePresent || (Boolean(result.homeSurface?.visible && result.hero?.visible) &&
-        (!result.suggestionsPresent || (result.cards.length >= 2 && result.cards.length <= 4))));
+      payloadPass && homePass;
     return result;
   })()`);
 }
@@ -1676,6 +1784,10 @@ if (path.resolve(process.argv[1] || "") === path.resolve(scriptPath)) {
       payloadBytes: Buffer.byteLength(loaded.payload),
       themeId: loaded.theme.id,
       appearance: loaded.theme.appearance,
+      colorMode: loaded.theme.colorMode,
+      explicitColorKeys: loaded.theme.explicitColorKeys,
+      hasColors: !!loaded.theme.colors && typeof loaded.theme.colors === "object",
+      hasPalette: Object.hasOwn(loaded.theme, "palette"),
       art: loaded.theme.art,
       artMetadata: loaded.theme.artMetadata ?? null,
       safeCssStatus: loaded.safeCssStatus,

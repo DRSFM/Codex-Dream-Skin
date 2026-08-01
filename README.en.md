@@ -32,8 +32,8 @@
 </td>
 <td>
 Thanks to Passion8 for being this project's exclusive sponsor! Passion8 is an AI API relay for developers, giving individuals and teams stable, low-cost access to mainstream large models.<br><br>
-<strong>Full-power AI, within reach</strong>: the full OpenAI and Claude lineups, original models, no silent downgrades and no wrapper shells; frontier models for a fraction of official pricing, with top-ups at 1:1 — <strong>$1 = ¥1</strong>. Keep your official SDK and point the base URL at Passion8: Claude Code, Codex, Grok, and any OpenAI-compatible client just work — one line of config, no code changes.<br><br>
-<strong>Global edge acceleration</strong>: Cloudflare's global edge plus multi-route BBR acceleration for low latency and high availability; 7×24 relay, 99.9% SLA, sub-second TTFT target.<br><br>
+<strong>Full-power AI, within reach</strong>: the full OpenAI and Claude lineups, original models, no silent downgrades and no wrapper shells; frontier models for a fraction of official pricing, with top-ups at 1:1 — <strong>$1 = ¥1</strong>. Keep your official SDK and point the base URL at Passion8: Claude Code, Codex, Grok, and any OpenAI-compatible client just work — one line of config, no code changes.
+<strong>Global edge acceleration</strong>: Cloudflare's global edge plus multi-route BBR acceleration for low latency and high availability; 7×24 relay, 99.9% SLA, sub-second TTFT target.
 <strong>Secure by default</strong>: isolated API keys, encrypted key storage, and HTTPS end to end — privacy first.<br><br>
 Passion8 has a benefit for this project's users: register through <a href="https://passion8.cc/sign-up?aff=ZgLT">this link</a> and your first top-up earns an automatic 10% bonus — no application needed, credited within 30 minutes. Questions go to <a href="mailto:support@passion8.cc">support@passion8.cc</a>.
 </td>
@@ -59,7 +59,7 @@ updates, and uninstall steps.
 
 <p align="center">
   <a href="https://dreamskin.cc">
-    <img src="docs/images/dreamskin-mark.svg" alt="DreamSkin.cc" height="88">
+    <img src="docs/images/dreamskin-mark.svg" alt="DreamSkin.cc" width="140">
   </a>
 </p>
 
@@ -219,8 +219,11 @@ The local simplified ZIP must contain exactly non-empty `theme.json`, non-empty
 manifest integrity or compatibility declaration and should come from a trusted
 source. Limits are 32 MiB per archive, 32 entries, and 64 MiB expanded. Import
 adds the pack to **Saved Themes** without changing the active theme. Identical
-content is not duplicated, and a distinct pack with an existing ID is
-preserved under a new safe ID.
+content is not duplicated. A newer pack with the same ID updates the saved theme
+in place after the old directory identity is confirmed, and only legacy `-2`/`-3`
+directories with an identical semantic fingerprint are cleaned up. If the
+existing directory identity cannot be confirmed, import fails closed instead of
+overwriting it; names alone are never used to delete another theme.
 
 For a manual fallback, extract the archive and move the complete directory
 containing `theme.json`, `theme.css`, and its image into the saved-theme folder:
