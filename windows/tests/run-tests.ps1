@@ -927,8 +927,12 @@ try {
     Set-Item 'function:Start-DreamSkinCodex' -Value { param($Codex, $Arguments) return 101 }
     Set-Item 'function:Wait-DreamSkinCodexDebugArgumentStatus' -Value { param($Codex, $Port) return 'forwarded' }
     Set-Item 'function:Start-DreamSkinCodexDirect' -Value { throw 'Direct fallback must not run for compatible package activation.' }
+    $script:dreamSkinStoppedProfilePath = $null
+    $script:dreamSkinStoppedMatchProfile = $false
     Set-Item 'function:Stop-DreamSkinCodex' -Value {
-      param($Codex, [int[]]$PreserveProcessIds, [switch]$AllowForce)
+      param($Codex, [int[]]$PreserveProcessIds, [switch]$AllowForce, [string]$ProfilePath, [switch]$MatchProfile)
+      $script:dreamSkinStoppedProfilePath = $ProfilePath
+      $script:dreamSkinStoppedMatchProfile = [bool]$MatchProfile
     }
     Set-Item 'function:Get-DreamSkinCodexProcesses' -Value {
       return @(
@@ -948,9 +952,10 @@ try {
       return 101
     }
     Set-Item 'function:Start-DreamSkinCodexDirect' -Value { param($Codex, $Arguments) return 202 }
+    $isolatedProfilePath = 'C:\Users\Test\.apicodex-desktop\deepseek'
     $isolatedLaunch = Start-DreamSkinCodexForDebugging -Codex $fakeInstall `
-      -Arguments @('--remote-debugging-port=9336', '--user-data-dir=C:\Users\Test\.apicodex-desktop\deepseek') `
-      -Port 9336 -PreserveProcessIds @(10, 20, 30)
+      -Arguments @('--remote-debugging-port=9336', "--user-data-dir=$isolatedProfilePath") `
+      -Port 9336 -ProfilePath $isolatedProfilePath -PreserveProcessIds @(10, 20, 30)
     if ($script:dreamSkinPackageLaunchCount -ne 0 -or $isolatedLaunch.ProcessId -ne 202 -or
       $isolatedLaunch.Strategy -cne 'direct-store-executable') {
       throw 'An isolated API profile was routed through single-instance package activation.'
@@ -961,7 +966,23 @@ try {
       throw 'An isolated API profile rollback was routed through single-instance package activation.'
     }
 
+    Set-Item 'function:Wait-DreamSkinCodexDebugArgumentStatus' -Value { param($Codex, $Port) return 'not-forwarded' }
+    $isolatedRollbackFailedClosed = $false
+    try {
+      $null = Start-DreamSkinCodexForDebugging -Codex $fakeInstall `
+        -Arguments @('--remote-debugging-port=9336', "--user-data-dir=$isolatedProfilePath") `
+        -Port 9336 -ProfilePath $isolatedProfilePath -PreserveProcessIds @(10, 20, 30)
+    } catch {
+      $isolatedRollbackFailedClosed = $_.Exception.Message.Contains(
+        'did not retain the isolated profile CDP arguments')
+    }
+    if (-not $isolatedRollbackFailedClosed -or -not $script:dreamSkinStoppedMatchProfile -or
+      -not (Test-DreamSkinPathEqual -Left $script:dreamSkinStoppedProfilePath -Right $isolatedProfilePath)) {
+      throw 'An isolated API profile launch failure was not rolled back within the exact profile scope.'
+    }
+
     Set-Item 'function:Start-DreamSkinCodex' -Value { param($Codex, $Arguments) return 101 }
+    Set-Item 'function:Wait-DreamSkinCodexDebugArgumentStatus' -Value { param($Codex, $Port) return 'forwarded' }
     $compatibleLaunch = Start-DreamSkinCodexForDebugging -Codex $fakeInstall `
       -Arguments @('--remote-debugging-port=9335') -Port 9335 -PreserveProcessIds @()
     if ($compatibleLaunch.ProcessId -ne 101 -or $compatibleLaunch.Strategy -cne 'package-activation') {
@@ -1035,6 +1056,8 @@ try {
     }
     Remove-Variable -Name dreamSkinDebugStatusCall -Scope Script -ErrorAction SilentlyContinue
     Remove-Variable -Name dreamSkinPackageLaunchCount -Scope Script -ErrorAction SilentlyContinue
+    Remove-Variable -Name dreamSkinStoppedProfilePath -Scope Script -ErrorAction SilentlyContinue
+    Remove-Variable -Name dreamSkinStoppedMatchProfile -Scope Script -ErrorAction SilentlyContinue
   }
   $fakeManifest.Package.Applications.Application[1].Id = 'Invalid App'
   if ($null -ne (ConvertTo-DreamSkinCodexInstall -Package $fakePackage -Manifest $fakeManifest)) {
@@ -1421,6 +1444,10 @@ try {
   if (-not $startSource.Contains('direct Store executable fallback did not expose a verified loopback CDP endpoint') -or
     -not $startSource.Contains('may disable CDP in this production runtime')) {
     throw 'A direct launch that retains CDP arguments but exposes no listener no longer reports the owl runtime failure.'
+  }
+  if (-not $startSource.Contains("PackageArgumentStatus -eq 'skipped-isolated-profile'") -or
+    -not $startSource.Contains('package activation was skipped to preserve its profile and CDP arguments')) {
+    throw 'Windows startup no longer distinguishes isolated direct launch from package-activation fallback.'
   }
   if (-not $startSource.Contains('-PreserveProcessIds $debugLaunchBaselineProcessIds -AllowForce') -or
     -not $startSource.Contains('reopening Codex without a debugging port')) {

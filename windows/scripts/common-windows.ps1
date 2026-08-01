@@ -801,6 +801,7 @@ function Start-DreamSkinCodexForDebugging {
     [Parameter(Mandatory = $true)][object]$Codex,
     [Parameter(Mandatory = $true)][AllowEmptyCollection()][string[]]$Arguments,
     [Parameter(Mandatory = $true)][int]$Port,
+    [string]$ProfilePath,
     [AllowEmptyCollection()][int[]]$PreserveProcessIds
   )
   $preservedProcessIds = if ($PSBoundParameters.ContainsKey('PreserveProcessIds')) {
@@ -809,6 +810,16 @@ function Start-DreamSkinCodexForDebugging {
     @(Get-DreamSkinCodexProcesses -Codex $Codex | ForEach-Object { [int]$_.ProcessId })
   }
   if (Test-DreamSkinCodexIsolatedArguments -Arguments $Arguments) {
+    $profileArguments = @($Arguments | Where-Object { "$_" -match '(?i)^--user-data-dir=.+$' })
+    if (-not $ProfilePath -or $profileArguments.Count -ne 1) {
+      throw 'An isolated Codex debug launch requires one explicit profile path for process-scoped rollback.'
+    }
+    $isolatedProfilePath = [System.IO.Path]::GetFullPath(
+      $profileArguments[0].Substring($profileArguments[0].IndexOf('=') + 1))
+    $rollbackProfilePath = [System.IO.Path]::GetFullPath($ProfilePath)
+    if (-not (Test-DreamSkinPathEqual -Left $isolatedProfilePath -Right $rollbackProfilePath)) {
+      throw 'The isolated Codex launch argument does not match its rollback profile path.'
+    }
     try {
       $isolatedProcessId = Start-DreamSkinCodexDirect -Codex $Codex -Arguments $Arguments
     } catch {
@@ -820,7 +831,8 @@ function Start-DreamSkinCodexForDebugging {
     $isolatedStatus = Wait-DreamSkinCodexDebugArgumentStatus -Codex $Codex -Port $Port
     if ($isolatedStatus -ne 'forwarded') {
       try {
-        Stop-DreamSkinCodex -Codex $Codex -PreserveProcessIds $preservedProcessIds -AllowForce
+        Stop-DreamSkinCodex -Codex $Codex -PreserveProcessIds $preservedProcessIds -AllowForce `
+          -ProfilePath $rollbackProfilePath -MatchProfile
       } catch {
         throw "The isolated Codex profile did not retain its CDP arguments and could not be closed safely: $($_.Exception.Message)"
       }

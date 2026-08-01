@@ -1,5 +1,29 @@
 # Task Progress
 
+## DRSFM PR #2 — v1.5.11 launcher integration (2026-08-01)
+
+- [implemented] Branch `agent/upstream-v1.5.11-launcher` retains the WPF/API
+  profile launcher, syncs Fei-Away v1.5.11 including the Codex 26.727 Settings
+  renderer contract, and routes every `--user-data-dir` launch through the
+  validated Store `ChatGPT.exe` instead of AppUserModelId activation.
+- [implemented] The previously red static check is fixed by storing
+  `windows/scripts/set-dream-skin-instance-appearance.ps1` as UTF-8 with BOM.
+  Isolated direct launch now reports that package activation was intentionally
+  skipped instead of incorrectly calling the path a fallback.
+- [implemented] Failed isolated launches now require the explicit rollback
+  profile to match the `--user-data-dir` argument and stop only that exact
+  profile. This closes the five-second race where a newly opened default or
+  unrelated API instance could otherwise be mistaken for a new launch process.
+- [verified locally] PowerShell 7 full Windows suite, Windows installer static
+  contracts, tracked PowerShell BOM policy, runtime asset synchronization,
+  all 20 Windows Node regressions, both payload checks, `git diff --check`, and
+  WPF launcher tests (6/6) pass. The 26.727-related macOS injector/renderer tests
+  pass; the complete macOS suite requires GitHub's macOS runner because five
+  fixtures use `/tmp` or macOS-only subprocess behavior.
+- [in progress] Commit and push the reviewed changes to PR #2, require fresh
+  exact-head Static, Windows PowerShell 5.1, Windows PowerShell 7 and macOS CI,
+  then merge to `DRSFM/main`. No tag or GitHub Release is in scope.
+
 ## Client release v1.5.11 — preparing (2026-08-01)
 
 - [base/merged] Settings renderer PR #334 passed exact-head CI run

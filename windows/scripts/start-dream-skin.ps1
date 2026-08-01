@@ -180,10 +180,14 @@ try {
         Get-DreamSkinCodexProcesses -Codex $codex | ForEach-Object { [int]$_.ProcessId }
       )
       $debugLaunch = Start-DreamSkinCodexForDebugging -Codex $codex -Arguments $arguments `
-        -Port $Port -PreserveProcessIds $debugLaunchBaselineProcessIds
+        -Port $Port -ProfilePath $ProfilePath -PreserveProcessIds $debugLaunchBaselineProcessIds
       $launchedWithCdp = $true
       if ($debugLaunch.Strategy -eq 'direct-store-executable') {
-        Write-Warning 'Codex package activation did not preserve the CDP arguments; using the validated Store executable fallback for this session.'
+        if ($debugLaunch.PackageArgumentStatus -eq 'skipped-isolated-profile') {
+          Write-Host 'Using the validated Store executable for this isolated profile; package activation was skipped to preserve its profile and CDP arguments.'
+        } else {
+          Write-Warning 'Codex package activation did not preserve the CDP arguments; using the validated Store executable fallback for this session.'
+        }
       }
     }
 
