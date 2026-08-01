@@ -20,9 +20,15 @@
   WPF launcher tests (6/6) pass. The 26.727-related macOS injector/renderer tests
   pass; the complete macOS suite requires GitHub's macOS runner because five
   fixtures use `/tmp` or macOS-only subprocess behavior.
-- [in progress] Commit and push the reviewed changes to PR #2, require fresh
-  exact-head Static, Windows PowerShell 5.1, Windows PowerShell 7 and macOS CI,
-  then merge to `DRSFM/main`. No tag or GitHub Release is in scope.
+- [committed/pushed] Fix commit
+  `7cd2392e1252899681ee2669e17f452f1347897f` is pushed to PR #2 and the PR is
+  ready for review.
+- [verified CI] Exact-head run `30687602988` passed Static, Windows PowerShell
+  5.1, Windows PowerShell 7 and macOS repository regressions; the macOS job also
+  produced its expected DMG smoke-test artifact.
+- [in progress] Commit and push this durable CI checkpoint, require the same
+  four checks on that final documentation-only head, then merge to
+  `DRSFM/main`. No tag or GitHub Release is in scope.
 
 ## Client release v1.5.11 — preparing (2026-08-01)
 
